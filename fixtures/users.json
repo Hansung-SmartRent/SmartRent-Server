@@ -1,0 +1,82 @@
+{
+  "about": "시험용 가짜 계정입니다. 실제 학생 정보가 아닙니다. 비밀번호는 개발용이고, DB에 넣을 때 반드시 BCrypt 해시로 바꿉니다. 이 주소들로 인증 메일을 보내지 마세요(학교 도메인이라 실제 누군가의 메일일 수 있음).",
+  "users": [
+    {
+      "key": "student-approved",
+      "role": "STUDENT",
+      "email": "demo@hansung.ac.kr",
+      "password": "demo1234",
+      "name": "김하늘",
+      "studentNumber": "2499001",
+      "approval": "APPROVED",
+      "note": "기본 학생. 대여 예시의 주인공"
+    },
+    {
+      "key": "student-pending",
+      "role": "STUDENT",
+      "email": "pending@hansung.ac.kr",
+      "password": "demo1234",
+      "name": "이새봄",
+      "studentNumber": "2499002",
+      "approval": "PENDING",
+      "note": "학생증 승인 대기(사진은 넣지 않음. 승인 화면 시험은 앱에서 사진을 새로 올려 확인)"
+    },
+    {
+      "key": "student-approved-2",
+      "role": "STUDENT",
+      "email": "minjun@hansung.ac.kr",
+      "password": "demo1234",
+      "name": "정민준",
+      "studentNumber": "2499005",
+      "approval": "APPROVED",
+      "note": "다른 학생(겹치는 예약 시험용)"
+    },
+    {
+      "key": "student-suspended",
+      "role": "STUDENT",
+      "email": "taeo@hansung.ac.kr",
+      "password": "demo1234",
+      "name": "윤태오",
+      "studentNumber": "2499008",
+      "approval": "APPROVED",
+      "suspendedUntilMonthsFromLoad": 5,
+      "warnings": [
+        "NO_SHOW",
+        "LATE",
+        "LATE"
+      ],
+      "note": "경고 3회로 정지 중(로드 시각 + 5개월까지)"
+    },
+    {
+      "key": "student-rejected",
+      "role": "STUDENT",
+      "email": "yerin@hansung.ac.kr",
+      "password": "demo1234",
+      "name": "강예린",
+      "studentNumber": "2499009",
+      "approval": "REJECTED",
+      "rejectReason": "학생증 사진이 흐려서 학번을 확인할 수 없습니다.",
+      "note": "반려됨"
+    },
+    {
+      "key": "student-new",
+      "role": "STUDENT",
+      "email": "newstudent@hansung.ac.kr",
+      "password": "demo1234",
+      "name": null,
+      "studentNumber": null,
+      "approval": "NONE",
+      "note": "이메일 인증만 하고 학생증 미제출"
+    },
+    {
+      "key": "admin",
+      "role": "ADMIN",
+      "email": "admin@hansung.ac.kr",
+      "password": "demo1234",
+      "name": "대여 관리자",
+      "studentNumber": null,
+      "approval": "APPROVED",
+      "note": "관리자. 가입 없이 DB에 직접 넣는다(기획안 1장)"
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+# ── 비밀정보: 절대 올리지 않음 (docs/시작하기.md 9절) ──
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+firebase-key*.json
+*-firebase-adminsdk-*.json
+serviceAccountKey*.json
+application-local.yml
+application-local.properties
+application-prod.yml
+application-prod.properties
+
+# ── 개인 정보가 든 파일 ──
+# 실제 학생 이름·학번·이메일이 든 파일은 레포 밖에 둡니다.
+*.sql.gz
+dump*.sql
+uploads/
+
+# ── Gradle / Java ──
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+out/
+bin/
+*.class
+*.log
+hs_err_pid*
+
+# ── IDE ──
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.project
+.classpath
+.settings/
+
+# ── OS ──
+.DS_Store
+Thumbs.db
+

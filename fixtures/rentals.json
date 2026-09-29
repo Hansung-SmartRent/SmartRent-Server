@@ -1,0 +1,84 @@
+{
+  "about": "앱 화면을 확인하기 위한 상태별 대여 예시입니다. 날짜가 금방 지나지 않도록 \"운영일 기준 며칠 뒤(dayOffset)\"와 시각으로 적었습니다. dayOffset 0은 로드한 날(쉬는 날이면 다음 운영일), 1은 그다음 운영일, -1은 그 전 운영일입니다. 시각 규칙 시험은 cases.json을 쓰세요.",
+  "rentals": [
+    {
+      "key": "reserved",
+      "student": "student-approved",
+      "modelKey": "48",
+      "status": "RESERVED",
+      "dayOffset": 1,
+      "start": "10:00",
+      "end": "11:00",
+      "note": "내일 예약"
+    },
+    {
+      "key": "renting",
+      "student": "student-approved",
+      "modelKey": "15",
+      "unitCode": "36",
+      "status": "RENTING",
+      "dayOffset": 0,
+      "start": "09:00",
+      "end": "18:00",
+      "note": "오늘 대여 중"
+    },
+    {
+      "key": "renting-broken",
+      "student": "student-approved",
+      "modelKey": "13",
+      "unitCode": "205",
+      "status": "RENTING",
+      "dayOffset": 0,
+      "start": "09:00",
+      "end": "19:00",
+      "brokenReported": true,
+      "brokenNote": "렌즈 앞쪽에 금이 가 있습니다.",
+      "note": "대여 중 파손 신고함(기기는 INSPECTION)"
+    },
+    {
+      "key": "reserved-other",
+      "student": "student-approved-2",
+      "modelKey": "7",
+      "status": "RESERVED",
+      "dayOffset": 2,
+      "start": "14:00",
+      "end": "16:00",
+      "note": "다른 학생 예약"
+    },
+    {
+      "key": "returned",
+      "student": "student-approved",
+      "modelKey": "15",
+      "unitCode": "37",
+      "status": "RETURNED",
+      "dayOffset": -2,
+      "start": "10:00",
+      "end": "12:00",
+      "returnedAt": "12:00",
+      "returnCondition": "NORMAL",
+      "note": "지난 반납"
+    },
+    {
+      "key": "no-show",
+      "student": "student-approved-2",
+      "modelKey": "8",
+      "status": "NO_SHOW",
+      "dayOffset": -4,
+      "start": "10:00",
+      "end": "12:00",
+      "cancelReason": "예약 시간 10분 내 미수령",
+      "note": "노쇼(경고 NO_SHOW 1회 함께 넣기)"
+    },
+    {
+      "key": "cancelled",
+      "student": "student-approved",
+      "modelKey": "19",
+      "status": "CANCELLED",
+      "dayOffset": -2,
+      "start": "11:00",
+      "end": "15:00",
+      "cancelReason": "학생이 직접 취소",
+      "note": "취소"
+    }
+  ]
+}

@@ -1,0 +1,1320 @@
+{
+  "about": "서버 시험으로 옮길 입력값과 예상 결과입니다. 예상 결과의 근거는 각 사례의 rule에 적은 기획안 장과 DB·API 명세 절입니다. 모든 시각은 한국 시각(+09:00)이고, 시험에서는 서버의 지금을 고정해야 합니다(Spring의 Clock 주입). 이 파일은 직접 고칩니다. 규칙이 바뀌면 docs/CONVENTION.md 5절대로 함께 고칩니다.",
+  "holidaysUsed": [
+    {
+      "date": "2026-10-03",
+      "name": "개천절"
+    },
+    {
+      "date": "2026-10-05",
+      "name": "대체공휴일(개천절)"
+    },
+    {
+      "date": "2026-10-09",
+      "name": "한글날"
+    },
+    {
+      "date": "2026-12-25",
+      "name": "성탄절"
+    },
+    {
+      "date": "2027-01-01",
+      "name": "신정"
+    },
+    {
+      "date": "2027-02-06",
+      "name": "설날 연휴"
+    },
+    {
+      "date": "2027-02-07",
+      "name": "설날"
+    },
+    {
+      "date": "2027-02-08",
+      "name": "설날 연휴"
+    },
+    {
+      "date": "2027-02-09",
+      "name": "대체공휴일(설날)"
+    },
+    {
+      "date": "2027-03-01",
+      "name": "삼일절"
+    },
+    {
+      "date": "2027-05-05",
+      "name": "어린이날"
+    },
+    {
+      "date": "2027-05-13",
+      "name": "부처님오신날"
+    },
+    {
+      "date": "2027-06-06",
+      "name": "현충일"
+    }
+  ],
+  "cases": [
+    {
+      "id": "AUTH-01",
+      "title": "학교 이메일은 @ 뒤 전체가 정확히 같아야 한다",
+      "rule": "기획안 1장, API 명세 1-7절",
+      "status": "확정",
+      "api": "POST /auth/email-codes, POST /auth/signup",
+      "when": {
+        "emails": [
+          "demo@hansung.ac.kr",
+          "DEMO@Hansung.AC.KR",
+          "a@hansung.kr",
+          "a@hansung.edu",
+          "a@myhansung.ac.kr",
+          "a@hansung.ac.kr.example.com",
+          "a@gmail.com",
+          "@hansung.ac.kr"
+        ]
+      },
+      "then": {
+        "allowed": {
+          "demo@hansung.ac.kr": true,
+          "DEMO@Hansung.AC.KR": true,
+          "a@hansung.kr": true,
+          "a@hansung.edu": true,
+          "a@myhansung.ac.kr": false,
+          "a@hansung.ac.kr.example.com": false,
+          "a@gmail.com": false
+        },
+        "otherwise": "EMAIL_DOMAIN_NOT_ALLOWED",
+        "formatError": {
+          "@hansung.ac.kr": "VALIDATION_ERROR"
+        }
+      }
+    },
+    {
+      "id": "AUTH-02",
+      "title": "인증번호는 5분 동안만 유효하고, 만료와 틀림을 구분한다",
+      "rule": "기획안 1장",
+      "status": "확정",
+      "api": "POST /auth/signup",
+      "given": {
+        "sentAt": "2026-10-07T10:00:00+09:00",
+        "email": "demo@hansung.ac.kr",
+        "code": "483920"
+      },
+      "when": [
+        {
+          "at": "2026-10-07T10:04:59+09:00",
+          "code": "483920"
+        },
+        {
+          "at": "2026-10-07T10:05:01+09:00",
+          "code": "483920"
+        },
+        {
+          "at": "2026-10-07T10:01:00+09:00",
+          "code": "111111"
+        }
+      ],
+      "then": [
+        {
+          "result": "성공"
+        },
+        {
+          "errorCode": "OTP_EXPIRED"
+        },
+        {
+          "errorCode": "OTP_INVALID"
+        }
+      ]
+    },
+    {
+      "id": "AUTH-03",
+      "title": "대여 중이면 탈퇴를 거부하고, 아니면 예약을 취소하고 경고를 6개월 보관한다",
+      "rule": "기획안 1장",
+      "status": "확정",
+      "api": "DELETE /users/me",
+      "given": {
+        "now": "2026-10-07T10:00:00+09:00",
+        "student": "2499001"
+      },
+      "when": [
+        {
+          "holding": "RENTING 1건"
+        },
+        {
+          "holding": "RESERVED 1건(10/8 10:00), 경고 NO_SHOW 1회"
+        }
+      ],
+      "then": [
+        {
+          "errorCode": "WITHDRAW_BLOCKED_HELD"
+        },
+        {
+          "account": "삭제",
+          "reservation": "취소 후 기록 삭제",
+          "retainedWarnings": [
+            {
+              "studentNumber": "2499001",
+              "kind": "NO_SHOW",
+              "retainUntil": "2027-04-07T10:00:00+09:00"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "RSV-01",
+      "title": "칸은 운영 시작부터 간격마다 만들고, 이미 시작한 칸은 보여 주지 않고 예약도 받지 않는다",
+      "rule": "기획안 3장",
+      "status": "확정",
+      "api": "GET /models/{id}/availability, POST /reservations",
+      "given": {
+        "model": {
+          "key": "17",
+          "name": "Creality k1 Max",
+          "rentalType": "GENERAL",
+          "multiDay": false,
+          "carryOut": false,
+          "openTime": "09:30",
+          "closeTime": "20:30",
+          "intervalMinutes": 30,
+          "units": [
+            {
+              "code": "66",
+              "condition": "NORMAL"
+            }
+          ]
+        },
+        "date": "2026-10-07"
+      },
+      "when": [
+        {
+          "now": "2026-10-07T08:00:00+09:00"
+        },
+        {
+          "now": "2026-10-07T10:10:00+09:00"
+        },
+        {
+          "now": "2026-10-07T10:10:00+09:00",
+          "reserve": {
+            "start": "2026-10-07T10:00:00+09:00",
+            "end": "2026-10-07T10:30:00+09:00"
+          }
+        }
+      ],
+      "then": [
+        {
+          "slotCount": 22,
+          "first": {
+            "start": "2026-10-07T09:30:00+09:00",
+            "end": "2026-10-07T10:00:00+09:00"
+          },
+          "last": {
+            "start": "2026-10-07T20:00:00+09:00",
+            "end": "2026-10-07T20:30:00+09:00"
+          }
+        },
+        {
+          "slotCount": 20,
+          "first": {
+            "start": "2026-10-07T10:30:00+09:00",
+            "end": "2026-10-07T11:00:00+09:00"
+          }
+        },
+        {
+          "errorCode": "OUT_OF_BOOKING_WINDOW",
+          "why": "이미 시작한 칸"
+        }
+      ]
+    },
+    {
+      "id": "RSV-02",
+      "title": "남은 대수는 합계가 아니라 동시에 겹치는 최대치로 센다",
+      "rule": "기획안 2장, DB 설계 6절",
+      "status": "확정",
+      "api": "GET /models/{id}/availability, POST /reservations",
+      "given": {
+        "model": {
+          "key": "29",
+          "name": "레이저 커팅기",
+          "rentalType": "GENERAL",
+          "multiDay": false,
+          "carryOut": false,
+          "openTime": "09:00",
+          "closeTime": "20:00",
+          "intervalMinutes": 60,
+          "units": [
+            {
+              "code": "80",
+              "condition": "NORMAL"
+            },
+            {
+              "code": "81",
+              "condition": "NORMAL"
+            }
+          ]
+        },
+        "note": "자리에서 쓰는 기자재(1시간 여유 없음), 정상 기기 2대"
+      },
+      "when": [
+        {
+          "existing": [
+            "10:00~12:00",
+            "12:00~14:00"
+          ],
+          "ask": "2026-10-07 10:00~14:00"
+        },
+        {
+          "existing": [
+            "10:00~12:00",
+            "11:00~13:00"
+          ],
+          "ask": "2026-10-07 10:00~14:00"
+        }
+      ],
+      "then": [
+        {
+          "available": 1
+        },
+        {
+          "available": 0
+        }
+      ]
+    },
+    {
+      "id": "RSV-03",
+      "title": "반출 가능 기자재는 다음 예약 1시간 전까지만 예약된다",
+      "rule": "기획안 3장, DB 설계 6절",
+      "status": "확정",
+      "api": "POST /reservations",
+      "given": {
+        "now": "2026-10-07T09:00:00+09:00",
+        "model": {
+          "key": "28",
+          "name": "리전 랩탑",
+          "rentalType": "GENERAL",
+          "multiDay": false,
+          "carryOut": true,
+          "openTime": "09:00",
+          "closeTime": "20:00",
+          "intervalMinutes": 60,
+          "units": [
+            {
+              "code": "240",
+              "condition": "NORMAL"
+            }
+          ]
+        },
+        "existing": [
+          {
+            "start": "2026-10-07T14:00:00+09:00",
+            "end": "2026-10-07T16:00:00+09:00",
+            "status": "RESERVED"
+          }
+        ]
+      },
+      "when": [
+        {
+          "segments": [
+            {
+              "start": "2026-10-07T12:00:00+09:00",
+              "end": "2026-10-07T13:00:00+09:00"
+            }
+          ]
+        },
+        {
+          "segments": [
+            {
+              "start": "2026-10-07T13:00:00+09:00",
+              "end": "2026-10-07T14:00:00+09:00"
+            }
+          ]
+        }
+      ],
+      "then": [
+        {
+          "result": "성공",
+          "status": "RESERVED"
+        },
+        {
+          "errorCode": "NO_CAPACITY"
+        }
+      ]
+    },
+    {
+      "id": "RSV-04",
+      "title": "떨어진 칸은 한 번의 신청(1건)으로 묶이고, 같은 종류의 두 번째 신청은 거절된다",
+      "rule": "기획안 3장",
+      "status": "확정",
+      "api": "POST /reservations",
+      "given": {
+        "now": "2026-10-07T09:00:00+09:00",
+        "model": "48 (Insta360 EVO, 4대)"
+      },
+      "when": [
+        {
+          "segments": [
+            {
+              "start": "2026-10-07T10:00:00+09:00",
+              "end": "2026-10-07T11:00:00+09:00"
+            },
+            {
+              "start": "2026-10-07T15:00:00+09:00",
+              "end": "2026-10-07T16:00:00+09:00"
+            }
+          ]
+        },
+        {
+          "segments": [
+            {
+              "start": "2026-10-08T10:00:00+09:00",
+              "end": "2026-10-08T11:00:00+09:00"
+            }
+          ],
+          "note": "첫 신청이 진행 중일 때"
+        }
+      ],
+      "then": [
+        {
+          "rentals": 2,
+          "sameApplicationId": true,
+          "status": "RESERVED"
+        },
+        {
+          "errorCode": "SAME_KIND_ACTIVE"
+        }
+      ]
+    },
+    {
+      "id": "RSV-05",
+      "title": "주말과 공휴일에는 칸이 없고 예약도 거절된다",
+      "rule": "기획안 8장",
+      "status": "확정",
+      "api": "GET /models/{id}/availability, POST /reservations",
+      "given": {
+        "now": "2026-10-07T09:00:00+09:00",
+        "holidays": [
+          {
+            "date": "2026-10-09",
+            "name": "한글날"
+          }
+        ]
+      },
+      "when": [
+        {
+          "availabilityDate": "2026-10-10"
+        },
+        {
+          "availabilityDate": "2026-10-09"
+        },
+        {
+          "reserve": {
+            "start": "2026-10-10T10:00:00+09:00",
+            "end": "2026-10-10T11:00:00+09:00"
+          }
+        }
+      ],
+      "then": [
+        {
+          "closed": true,
+          "closedReason": "주말",
+          "slots": []
+        },
+        {
+          "closed": true,
+          "closedReason": "한글날",
+          "slots": []
+        },
+        {
+          "errorCode": "CLOSED_DAY"
+        }
+      ]
+    },
+    {
+      "id": "RSV-06",
+      "title": "예약은 다음 주 금요일(월요일 시작 주 기준) 운영 종료까지만 잡힌다",
+      "rule": "기획안 3장",
+      "status": "확정",
+      "api": "POST /reservations",
+      "when": [
+        {
+          "today": "2026-09-26(토)"
+        },
+        {
+          "today": "2026-10-07(수)"
+        },
+        {
+          "today": "2026-10-07(수)",
+          "reserve": "2026-10-16 19:00~20:00"
+        },
+        {
+          "today": "2026-10-07(수)",
+          "reserve": "2026-10-19 10:00~11:00"
+        }
+      ],
+      "then": [
+        {
+          "nextFriday": "2026-10-02"
+        },
+        {
+          "nextFriday": "2026-10-16"
+        },
+        {
+          "result": "성공"
+        },
+        {
+          "errorCode": "OUT_OF_BOOKING_WINDOW"
+        }
+      ],
+      "given": {
+        "model": "48 (Insta360 EVO, 09:00~20:00, 1시간 간격)"
+      }
+    },
+    {
+      "id": "LT-01",
+      "title": "장기 대여 반납 기한은 수령일 + 6개월의 운영 종료 시각",
+      "rule": "기획안 4장",
+      "status": "확정",
+      "api": "GET /models/{id}/availability, POST /reservations",
+      "given": {
+        "model": {
+          "key": "30",
+          "name": "맥북",
+          "rentalType": "LONG_TERM",
+          "multiDay": false,
+          "carryOut": true,
+          "openTime": "09:00",
+          "closeTime": "17:00",
+          "intervalMinutes": 60,
+          "units": [
+            {
+              "code": "241",
+              "condition": "NORMAL"
+            },
+            {
+              "code": "242",
+              "condition": "NORMAL"
+            },
+            {
+              "code": "243",
+              "condition": "NORMAL"
+            },
+            {
+              "code": "244",
+              "condition": "NORMAL"
+            },
+            {
+              "code": "245",
+              "condition": "NORMAL"
+            }
+          ]
+        }
+      },
+      "when": {
+        "pickupDate": "2026-10-07"
+      },
+      "then": {
+        "returnDue": "2027-04-07T17:00:00+09:00"
+      }
+    },
+    {
+      "id": "LT-02",
+      "title": "6개월 뒤가 쉬는 날이면 그 전 운영일로 당긴다",
+      "rule": "기획안 4·8장",
+      "status": "확정",
+      "api": "GET /models/{id}/availability",
+      "given": {
+        "model": "30 (맥북, 장기 대여 예시 모델, 09:00~17:00)"
+      },
+      "when": {
+        "pickupDate": "2026-11-02",
+        "sixMonthsLater": "2027-05-02(쉬는 날)"
+      },
+      "then": {
+        "returnDue": "2027-04-30T17:00:00+09:00"
+      }
+    },
+    {
+      "id": "PICK-01",
+      "title": "수령은 운영 시간 안에만. 시작 전이라도 남는 기기가 있으면 일찍 받는다",
+      "rule": "기획안 5장",
+      "status": "확정",
+      "api": "POST /admin/rentals/{id}/pickup",
+      "given": {
+        "model": "48 (09:00~20:00)",
+        "rental": {
+          "status": "RESERVED",
+          "start": "2026-10-07T10:00:00+09:00",
+          "end": "2026-10-07T12:00:00+09:00"
+        }
+      },
+      "when": [
+        {
+          "at": "2026-10-07T08:30:00+09:00",
+          "unitCode": "278"
+        },
+        {
+          "at": "2026-10-07T09:05:00+09:00",
+          "unitCode": "278"
+        }
+      ],
+      "then": [
+        {
+          "errorCode": "OUTSIDE_OPERATING_HOURS"
+        },
+        {
+          "status": "RENTING",
+          "pickedAt": "2026-10-07T09:05:00+09:00",
+          "endAt": "2026-10-07T12:00:00+09:00"
+        }
+      ]
+    },
+    {
+      "id": "PICK-02",
+      "title": "장기 대여 수령은 관리자가 지도교수 메일을 확인해야 된다",
+      "rule": "기획안 4·5장, DB 설계 7절, API 장기 대여 수령 마감",
+      "status": "확정",
+      "api": "POST /admin/rentals/{id}/pickup",
+      "given": {
+        "now": "2026-10-07T10:00:00+09:00",
+        "model": "30 (맥북, 장기 대여 예시 모델, 09:00~17:00)",
+        "rental": {
+          "status": "RESERVED",
+          "start": "2026-10-07T09:00:00+09:00",
+          "end": "2027-04-07T17:00:00+09:00"
+        },
+        "unitCode": "241",
+        "note": "각 입력은 수령 전 given에서 확인하는 별도 사례입니다. 운영 종료 전 장기 수령에는 일반 대여의 시작 + 10분 제한을 적용하지 않습니다."
+      },
+      "when": [
+        {
+          "professorMailChecked": false
+        },
+        {
+          "professorMailChecked": true
+        },
+        {
+          "at": "2026-10-07T16:59:59+09:00",
+          "professorMailChecked": true
+        },
+        {
+          "at": "2026-10-07T17:00:00+09:00",
+          "professorMailChecked": true
+        }
+      ],
+      "then": [
+        {
+          "errorCode": "PROFESSOR_MAIL_REQUIRED"
+        },
+        {
+          "status": "RENTING"
+        },
+        {
+          "status": "RENTING"
+        },
+        {
+          "errorCode": "NO_SHOW_DEADLINE_PASSED",
+          "status": "NO_SHOW",
+          "warningKind": "NO_SHOW",
+          "warningCreatedAt": "2026-10-07T17:00:00+09:00"
+        }
+      ]
+    },
+    {
+      "id": "WALK-01",
+      "title": "현장 대여 반납 기한은 예약 규칙과 같고, 다음 예약 1시간 전(반출 기자재)까지만",
+      "rule": "기획안 5장",
+      "status": "확정",
+      "api": "GET /admin/walk-ins/options",
+      "given": {
+        "model": {
+          "key": "28",
+          "name": "리전 랩탑",
+          "rentalType": "GENERAL",
+          "multiDay": false,
+          "carryOut": true,
+          "openTime": "09:00",
+          "closeTime": "20:00",
+          "intervalMinutes": 60,
+          "units": [
+            {
+              "code": "240",
+              "condition": "NORMAL"
+            }
+          ]
+        },
+        "existing": [
+          {
+            "start": "2026-10-07T14:00:00+09:00",
+            "end": "2026-10-07T15:00:00+09:00",
+            "status": "RESERVED"
+          }
+        ]
+      },
+      "when": [
+        {
+          "now": "2026-10-07T10:05:00+09:00"
+        },
+        {
+          "now": "2026-10-10T11:00:00+09:00(토)"
+        }
+      ],
+      "then": [
+        {
+          "endOptions": [
+            "2026-10-07T11:00:00+09:00",
+            "2026-10-07T12:00:00+09:00",
+            "2026-10-07T13:00:00+09:00"
+          ]
+        },
+        {
+          "endOptions": [],
+          "blockReason": "주말"
+        }
+      ]
+    },
+    {
+      "id": "RET-01",
+      "title": "기한이 지나면 판정 작업이 연체 경고 1회, 늦게 반납해도 다시 붙이지 않는다",
+      "rule": "기획안 6·7장, DB 설계 7절",
+      "status": "확정",
+      "api": "판정 작업, POST /admin/rentals/{id}/return",
+      "given": {
+        "rental": {
+          "status": "RENTING",
+          "endAt": "2026-10-07T12:00:00+09:00",
+          "unitCode": "278"
+        }
+      },
+      "when": [
+        {
+          "job": "2026-10-07T12:01:00+09:00"
+        },
+        {
+          "return": {
+            "at": "2026-10-07T12:05:00+09:00",
+            "unitCode": "278",
+            "condition": "NORMAL"
+          }
+        }
+      ],
+      "then": [
+        {
+          "warnings": [
+            {
+              "kind": "LATE"
+            }
+          ]
+        },
+        {
+          "status": "RETURNED",
+          "returnedAt": "2026-10-07T12:05:00+09:00",
+          "lateWarnings": 1
+        }
+      ]
+    },
+    {
+      "id": "RET-02",
+      "title": "대여 중 스스로 신고한 파손은 경고 없음, 신고 없이 파손 반납이면 경고 1회",
+      "rule": "기획안 2·6·7장, DB 설계 4절",
+      "status": "확정",
+      "api": "POST /rentals/{id}/damage-report, POST /admin/rentals/{id}/return",
+      "given": {
+        "rentals": [
+          {
+            "student": "2499001",
+            "unitCode": "278",
+            "status": "RENTING"
+          },
+          {
+            "student": "2499005",
+            "unitCode": "279",
+            "status": "RENTING"
+          }
+        ]
+      },
+      "when": [
+        {
+          "student": "2499001",
+          "damageReport": "렌즈에 금이 갔습니다"
+        },
+        {
+          "returnBoth": "DAMAGED",
+          "at": "2026-10-07T11:00:00+09:00"
+        }
+      ],
+      "then": [
+        {
+          "unit278": "INSPECTION",
+          "rental": "RENTING 그대로",
+          "damageReported": true,
+          "warnings2499001": 0
+        },
+        {
+          "warnings2499001": 0,
+          "warnings2499005": [
+            {
+              "kind": "DAMAGE"
+            }
+          ],
+          "units": "DAMAGED"
+        }
+      ]
+    },
+    {
+      "id": "EXT-01",
+      "title": "연장은 일반 대여만 한 번, 하루 대여는 그날 운영 종료까지",
+      "rule": "기획안 4·6장",
+      "status": "확정",
+      "api": "POST /rentals/{id}/extend",
+      "given": {
+        "now": "2026-10-07T11:00:00+09:00",
+        "rentals": [
+          {
+            "id": "A",
+            "model": "1 (자리에서 사용, 09:00~20:00)",
+            "endAt": "2026-10-07T12:00:00+09:00",
+            "status": "RENTING"
+          },
+          {
+            "id": "B",
+            "model": "30 (장기 대여 예시 모델)",
+            "status": "RENTING"
+          }
+        ]
+      },
+      "when": [
+        {
+          "rental": "A",
+          "newEnd": "2026-10-07T21:00:00+09:00"
+        },
+        {
+          "rental": "A",
+          "newEnd": "2026-10-07T20:00:00+09:00"
+        },
+        {
+          "rental": "A",
+          "newEnd": "2026-10-07T20:00:00+09:00",
+          "note": "두 번째"
+        },
+        {
+          "rental": "B",
+          "newEnd": "2027-05-07T17:00:00+09:00"
+        }
+      ],
+      "then": [
+        {
+          "errorCode": "EXTENSION_LIMIT"
+        },
+        {
+          "endAt": "2026-10-07T20:00:00+09:00",
+          "extended": true
+        },
+        {
+          "errorCode": "EXTENSION_NOT_ALLOWED"
+        },
+        {
+          "errorCode": "LONG_TERM_EXTENSION_BLOCKED"
+        }
+      ]
+    },
+    {
+      "id": "EXT-02",
+      "title": "2일 이상 대여 연장은 다음 주 금요일 운영 종료까지, 쉬는 날은 못 고른다",
+      "rule": "기획안 4·6·8장",
+      "status": "확정",
+      "api": "GET /rentals/{id}/extension-options, POST /rentals/{id}/extend",
+      "given": {
+        "now": "2026-10-07T12:00:00+09:00",
+        "model": {
+          "key": "demo-lg",
+          "name": "LG gram +view 16MR70",
+          "rentalType": "GENERAL",
+          "multiDay": true,
+          "carryOut": true,
+          "openTime": "09:00",
+          "closeTime": "20:00",
+          "intervalMinutes": 60,
+          "units": [
+            {
+              "code": "demo-lg-1",
+              "condition": "NORMAL"
+            },
+            {
+              "code": "demo-lg-2",
+              "condition": "NORMAL"
+            }
+          ],
+          "siteNumber": null,
+          "source": "EXAMPLE",
+          "exampleFor": "MULTI_DAY"
+        },
+        "note": "2일 이상 대여 예시 모델 LG gram +view 16MR70(기획안 4장). fixtures/equipment.json의 key demo-lg",
+        "rental": {
+          "endAt": "2026-10-08T20:00:00+09:00",
+          "status": "RENTING"
+        }
+      },
+      "when": [
+        {
+          "newEnd": "2026-10-09T20:00:00+09:00"
+        },
+        {
+          "newEnd": "2026-10-19T20:00:00+09:00"
+        },
+        {
+          "newEnd": "2026-10-16T20:00:00+09:00"
+        }
+      ],
+      "then": [
+        {
+          "errorCode": "EXTENSION_LIMIT",
+          "why": "한글날"
+        },
+        {
+          "errorCode": "EXTENSION_LIMIT",
+          "why": "다음 주 금요일 이후"
+        },
+        {
+          "endAt": "2026-10-16T20:00:00+09:00"
+        }
+      ]
+    },
+    {
+      "id": "EXT-03",
+      "title": "하루 대여는 15분 전 알림, 연장하면 새 기한으로 다시 알린다",
+      "rule": "기획안 6·9장, DB 설계 7절",
+      "status": "확정",
+      "api": "판정 작업, POST /rentals/{id}/extend",
+      "given": {
+        "rental": {
+          "endAt": "2026-10-07T12:00:00+09:00",
+          "status": "RENTING"
+        }
+      },
+      "when": [
+        {
+          "job": "2026-10-07T11:46:00+09:00"
+        },
+        {
+          "extend": "2026-10-07T14:00:00+09:00",
+          "at": "2026-10-07T11:50:00+09:00"
+        },
+        {
+          "job": "2026-10-07T13:30:00+09:00"
+        },
+        {
+          "job": "2026-10-07T13:46:00+09:00"
+        }
+      ],
+      "then": [
+        {
+          "dueNotifications": 1
+        },
+        {
+          "dueNotified": false
+        },
+        {
+          "dueNotifications": 1
+        },
+        {
+          "dueNotifications": 2
+        }
+      ]
+    },
+    {
+      "id": "NS-01",
+      "title": "시작 10분 뒤까지 안 받으면 노쇼, 경고는 신청 단위 1회, 같은 신청의 남은 칸은 취소",
+      "rule": "기획안 5·7장, DB 설계 7절",
+      "status": "확정",
+      "api": "판정 작업",
+      "given": {
+        "application": [
+          {
+            "id": "r1",
+            "start": "2026-10-07T10:00:00+09:00",
+            "end": "2026-10-07T11:00:00+09:00"
+          },
+          {
+            "id": "r2",
+            "start": "2026-10-07T15:00:00+09:00",
+            "end": "2026-10-07T16:00:00+09:00"
+          }
+        ],
+        "createdAt": "2026-10-06T09:00:00+09:00"
+      },
+      "when": [
+        {
+          "job": "2026-10-07T10:09:00+09:00"
+        },
+        {
+          "job": "2026-10-07T10:10:00+09:00"
+        }
+      ],
+      "then": [
+        {
+          "r1": "RESERVED"
+        },
+        {
+          "r1": "NO_SHOW",
+          "r2": "CANCELLED",
+          "cancelReasonR2": "연결 신청 미수령",
+          "warnings": [
+            {
+              "kind": "NO_SHOW"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "NS-02",
+      "title": "예약 시작 시각에 내줄 정상 기기가 없으면 즉시 취소하고 알림, 경고 없음",
+      "rule": "기획안 5·9장(예약 시작 시 기기 부족 즉시 취소), DB 설계 7절",
+      "status": "확정",
+      "api": "판정 작업, POST /admin/rentals/{id}/return, POST /admin/rentals/{id}/pickup",
+      "given": {
+        "now": "2026-10-07T09:59:00+09:00",
+        "model": {
+          "key": "29",
+          "name": "레이저 커팅기",
+          "carryOut": false,
+          "units": [
+            {
+              "code": "80",
+              "condition": "NORMAL"
+            },
+            {
+              "code": "81",
+              "condition": "INSPECTION"
+            }
+          ]
+        },
+        "rentals": [
+          {
+            "id": "prev",
+            "student": "2499005",
+            "unitCode": "80",
+            "status": "RENTING",
+            "pickedAt": "2026-10-07T09:00:00+09:00",
+            "endAt": "2026-10-07T10:00:00+09:00"
+          },
+          {
+            "id": "mine",
+            "student": "2499001",
+            "status": "RESERVED",
+            "start": "2026-10-07T10:00:00+09:00",
+            "end": "2026-10-07T12:00:00+09:00"
+          }
+        ]
+      },
+      "when": [
+        {
+          "job": "2026-10-07T10:00:00+09:00"
+        },
+        {
+          "return": "prev at 2026-10-07T10:20:00+09:00"
+        },
+        {
+          "job": "2026-10-07T10:21:00+09:00"
+        },
+        {
+          "pickup": "mine at 2026-10-07T10:25:00+09:00",
+          "unitCode": "80"
+        },
+        {
+          "alternative": "given에서 시작 판정만 지연. prev를 10:20에 반납하고 10:21에 판정; 시작 시점에는 정상 기기가 없음"
+        },
+        {
+          "alternative": "given에서 기기 81이 NORMAL이고 비어 있음. 10:00 시작 판정"
+        }
+      ],
+      "then": [
+        {
+          "mine": "CANCELLED",
+          "cancelReason": "예약 시작 시 기기 부족",
+          "notifications": [
+            {
+              "student": "2499001",
+              "kind": "CANCEL",
+              "relatedType": "RENTAL",
+              "relatedId": "mine"
+            }
+          ],
+          "warnings2499001": 0
+        },
+        {
+          "prev": "RETURNED",
+          "prevWarnings": [
+            {
+              "kind": "LATE"
+            }
+          ],
+          "mine": "CANCELLED",
+          "warnings2499001": 0
+        },
+        {
+          "mine": "CANCELLED",
+          "cancelNotifications2499001": 1,
+          "pickupAvailabilityNotifications2499001": 0,
+          "warnings2499001": 0
+        },
+        {
+          "errorCode": "INVALID_STATUS",
+          "mine": "CANCELLED",
+          "warnings2499001": 0
+        },
+        {
+          "mine": "CANCELLED",
+          "cancelReason": "예약 시작 시 기기 부족",
+          "cancelNotifications2499001": 1,
+          "warnings2499001": 0
+        },
+        {
+          "mine": "RESERVED",
+          "cancelNotifications2499001": 0,
+          "warnings2499001": 0
+        }
+      ]
+    },
+    {
+      "id": "WARN-01",
+      "title": "경고 3회면 정지: 예약 취소, 보유 기기 즉시 반납 요망, 6개월은 마지막 반납부터",
+      "rule": "기획안 7장, DB 설계 7절",
+      "status": "확정",
+      "api": "판정 작업, POST /admin/rentals/{id}/return",
+      "given": {
+        "warnings": 2,
+        "rentals": [
+          {
+            "id": "held",
+            "status": "RENTING",
+            "endAt": "2026-10-07T10:00:00+09:00",
+            "unitCode": "278"
+          },
+          {
+            "id": "future",
+            "status": "RESERVED",
+            "start": "2026-10-08T10:00:00+09:00"
+          }
+        ]
+      },
+      "when": [
+        {
+          "job": "2026-10-07T10:01:00+09:00"
+        },
+        {
+          "return": "held at 2026-10-07T15:00:00+09:00"
+        }
+      ],
+      "then": [
+        {
+          "warnings": 3,
+          "suspension": {
+            "untilReturn": true
+          },
+          "future": "CANCELLED",
+          "held": {
+            "returnRequired": true
+          }
+        },
+        {
+          "suspension": {
+            "untilReturn": false,
+            "until": "2027-04-07T15:00:00+09:00"
+          }
+        }
+      ]
+    },
+    {
+      "id": "WARN-02",
+      "title": "관리자가 경고를 취소해 3회 미만이 되면 정지가 풀린다",
+      "rule": "기획안 7장",
+      "status": "확정",
+      "api": "POST /admin/warnings/{id}/revoke",
+      "given": {
+        "warnings": [
+          "wa",
+          "wb",
+          "wc"
+        ],
+        "suspension": {
+          "until": "2027-04-01T10:00:00+09:00"
+        }
+      },
+      "when": {
+        "revoke": "wc",
+        "reason": "관리자 검토 후 철회"
+      },
+      "then": {
+        "activeWarnings": 2,
+        "suspension": {
+          "suspended": false,
+          "until": null
+        }
+      }
+    },
+    {
+      "id": "OPS-01",
+      "title": "임시 휴무를 넣으면 그날 걸친 예약만 경고 없이 취소한다",
+      "rule": "기획안 8장, DB 설계 4절",
+      "status": "확정",
+      "api": "POST /admin/holidays",
+      "given": {
+        "now": "2026-10-07T09:00:00+09:00",
+        "rentals": [
+          {
+            "id": "on8",
+            "status": "RESERVED",
+            "start": "2026-10-08T10:00:00+09:00"
+          },
+          {
+            "id": "on7",
+            "status": "RESERVED",
+            "start": "2026-10-07T15:00:00+09:00"
+          }
+        ]
+      },
+      "when": {
+        "holiday": {
+          "date": "2026-10-08",
+          "name": "기자재실 정기 점검"
+        }
+      },
+      "then": {
+        "on8": "CANCELLED",
+        "on7": "RESERVED",
+        "warnings": 0,
+        "cancelledRentals": [
+          "on8"
+        ]
+      }
+    },
+    {
+      "id": "OPS-02",
+      "title": "일주일 안에 돌아올 대여의 반납일이 휴무가 되면 그 뒤 가장 가까운 운영하는 평일의 운영 종료로 늘리고 알린다",
+      "rule": "기획안 8장, DB 설계 4절",
+      "status": "확정",
+      "api": "POST /admin/holidays",
+      "given": {
+        "now": "2026-10-07T09:00:00+09:00",
+        "rental": {
+          "id": "due8",
+          "status": "RENTING",
+          "endAt": "2026-10-08T20:00:00+09:00"
+        },
+        "holidays": [
+          "2026-10-09 한글날",
+          "10/10~11 주말"
+        ]
+      },
+      "when": {
+        "holiday": {
+          "date": "2026-10-08",
+          "name": "기자재실 정기 점검"
+        }
+      },
+      "then": {
+        "endAt": "2026-10-12T20:00:00+09:00",
+        "notification": "BOOKING(반납 기한 변경)"
+      }
+    },
+    {
+      "id": "UNIT-01",
+      "title": "기기가 점검 중이 되어 대수가 모자라면, 신청 시각이 늦은 예약만 바로 취소하고 먼저 신청한 예약은 유지한다(학생 신고와 관리자 변경 모두)",
+      "rule": "기획안 2장, DB 설계 4절",
+      "status": "확정",
+      "api": "POST /rentals/{id}/damage-report, PATCH /admin/units/{id}",
+      "given": {
+        "now": "2026-10-07T10:30:00+09:00",
+        "model": {
+          "key": "29",
+          "name": "레이저 커팅기",
+          "carryOut": false,
+          "openTime": "09:00",
+          "closeTime": "20:00",
+          "intervalMinutes": 60,
+          "units": [
+            {
+              "code": "80",
+              "condition": "NORMAL"
+            },
+            {
+              "code": "81",
+              "condition": "NORMAL"
+            }
+          ]
+        },
+        "rentals": [
+          {
+            "id": "R",
+            "student": "2499005",
+            "status": "RENTING",
+            "unitCode": "80",
+            "start": "2026-10-07T09:00:00+09:00",
+            "end": "2026-10-07T12:00:00+09:00"
+          },
+          {
+            "id": "A",
+            "student": "2499001",
+            "status": "RESERVED",
+            "start": "2026-10-07T14:00:00+09:00",
+            "end": "2026-10-07T15:00:00+09:00",
+            "createdAt": "2026-10-05T15:00:00+09:00"
+          },
+          {
+            "id": "B",
+            "student": "2499102",
+            "status": "RESERVED",
+            "start": "2026-10-07T14:00:00+09:00",
+            "end": "2026-10-07T15:00:00+09:00",
+            "createdAt": "2026-10-06T09:00:00+09:00"
+          }
+        ],
+        "note": "'나중 예약'은 이용 시작 시각이 아니라 신청 시각(createdAt)이 늦은 예약입니다. A와 B는 같은 시간이고 B가 나중에 신청했습니다. 2499102는 시험에서 만드는 승인된 가짜 학생입니다."
+      },
+      "when": [
+        {
+          "by": "학생 신고",
+          "request": "2499005가 R에 기기 이상 신고(POST /rentals/R/damage-report)"
+        },
+        {
+          "by": "관리자 변경",
+          "request": "같은 given에서 신고 대신 관리자가 기기 81을 INSPECTION으로 변경(PATCH /admin/units/{81의 id})"
+        }
+      ],
+      "then": [
+        {
+          "unit80": "INSPECTION",
+          "R": "RENTING, 반납 기한 12:00 그대로",
+          "A": "RESERVED",
+          "B": "CANCELLED",
+          "notifications": [
+            {
+              "student": "2499102",
+              "kind": "CANCEL"
+            }
+          ],
+          "warnings": 0,
+          "cancelledRentals": [
+            "B"
+          ]
+        },
+        {
+          "unit81": "INSPECTION",
+          "A": "RESERVED",
+          "B": "CANCELLED",
+          "notifications": [
+            {
+              "student": "2499102",
+              "kind": "CANCEL"
+            }
+          ],
+          "warnings": 0,
+          "cancelledRentals": [
+            "B"
+          ]
+        }
+      ]
+    }
+  ]
+}
