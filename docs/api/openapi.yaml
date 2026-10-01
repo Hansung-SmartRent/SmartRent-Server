@@ -6020,6 +6020,7 @@ components:
         errorCode:
           type: string
           example: SAME_KIND_ACTIVE
+          description: 오류 코드 목록은 docs/api/README.md 1-6절. 각 API에 적은 코드 말고도 모든 API에서 500 INTERNAL_ERROR(예상하지 못한 서버 오류)가 날 수 있다.
       required:
       - success
       - message

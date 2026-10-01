@@ -20,13 +20,13 @@ class ErrorCodeTest {
 	private static final Pattern ROW = Pattern.compile("^\\| `([A-Z_]+)` \\| (\\d{3}) \\| ([^|]+?) \\|", Pattern.MULTILINE);
 
 	@Test
-	void B1_01_6_ErrorCode_51개가_명세_표와_이름_상태_메시지가_같다() throws IOException {
+	void B1_01_6_ErrorCode_52개가_명세_표와_이름_상태_메시지가_같다() throws IOException {
 		Map<String, String> spec = readSpecTable();
 		Map<String, String> code = new LinkedHashMap<>();
 		Arrays.stream(ErrorCode.values())
 			.forEach(e -> code.put(e.name(), e.getStatus().value() + " " + e.getMessage()));
 
-		assertThat(spec).hasSize(51);
+		assertThat(spec).hasSize(52);
 		assertThat(code).containsExactlyEntriesOf(spec);
 	}
 

@@ -17,6 +17,7 @@ public enum ErrorCode {
 	FORBIDDEN(HttpStatus.FORBIDDEN, "권한이 없습니다."),
 	NOT_FOUND(HttpStatus.NOT_FOUND, "대상을 찾을 수 없습니다."),
 	CONFLICT_RETRY(HttpStatus.CONFLICT, "다른 요청과 겹쳤습니다. 다시 시도해 주세요."),
+	INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "일시적인 오류가 발생했습니다. 잠시 뒤 다시 시도해 주세요."),
 	EMAIL_DOMAIN_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "학교 이메일만 사용할 수 있습니다."),
 	EMAIL_ALREADY_USED(HttpStatus.CONFLICT, "이미 가입된 이메일입니다."),
 	OTP_INVALID(HttpStatus.BAD_REQUEST, "인증 코드가 올바르지 않습니다."),

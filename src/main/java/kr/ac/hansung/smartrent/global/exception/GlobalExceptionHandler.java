@@ -3,9 +3,11 @@ package kr.ac.hansung.smartrent.global.exception;
 import java.util.List;
 
 import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
 import kr.ac.hansung.smartrent.global.response.ApiResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -15,6 +17,7 @@ import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /** 예외를 공통 응답 틀과 ErrorCode의 HTTP 상태로 바꿉니다(API 명세 1-6절). */
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -63,6 +66,20 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler({NoResourceFoundException.class, NoHandlerFoundException.class})
 	public ResponseEntity<ApiResponse<Void>> handleNotFound(Exception e) {
 		ErrorCode code = ErrorCode.NOT_FOUND;
+		return ResponseEntity.status(code.getStatus()).body(ApiResponse.fail(code));
+	}
+
+	/**
+	 * 위에서 처리하지 못한 예외: 500 INTERNAL_ERROR. 원인은 로그에만 남기고 응답에는 넣지 않습니다.
+	 * 405처럼 Spring이 상태 코드를 정해 둔 요청 오류는 500으로 바꾸지 않고 Spring 기본 처리에 맡깁니다.
+	 */
+	@ExceptionHandler(Exception.class)
+	public ResponseEntity<ApiResponse<Void>> handleUnexpected(Exception e) throws Exception {
+		if (e instanceof ErrorResponse) {
+			throw e;
+		}
+		log.error("처리하지 못한 예외", e);
+		ErrorCode code = ErrorCode.INTERNAL_ERROR;
 		return ResponseEntity.status(code.getStatus()).body(ApiResponse.fail(code));
 	}
 
