@@ -1,0 +1,14 @@
+# 시험 전용 설정. 개인 .env를 읽지 않습니다(main의 application.yml 대신 이 파일이 쓰임).
+# DB는 TestcontainersConfiguration이 시험마다 새 MySQL 9.7 컨테이너를 띄워 연결합니다(Docker 필요).
+spring:
+  application:
+    name: smartrent
+  autoconfigure:
+    # 로그인 전(B1-04 전)에는 임시 계정·비밀번호를 만들지 않게 끔. B1-04에서 지웁니다.
+    exclude: org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: Asia/Seoul

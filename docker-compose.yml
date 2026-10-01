@@ -1,0 +1,23 @@
+# 개발용 MySQL. 프로젝트 루트에서: docker compose up -d mysql
+# 계정 이름·비밀번호는 .env의 DB_USERNAME·DB_PASSWORD를 그대로 씁니다.
+services:
+  mysql:
+    image: mysql:9.7
+    container_name: smartrent-mysql
+    environment:
+      MYSQL_DATABASE: smartrent
+      MYSQL_USER: ${DB_USERNAME:?.env에 DB_USERNAME을 넣어 주세요}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?.env에 DB_PASSWORD를 넣어 주세요}
+      MYSQL_RANDOM_ROOT_PASSWORD: "yes"
+      TZ: Asia/Seoul
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+    ports:
+      # 컴퓨터에 이미 MySQL이 3306을 쓰고 있으면 .env의 DB_HOST_PORT를 3307 등으로 바꿈
+      - "${DB_HOST_PORT:-3306}:3306"
+    volumes:
+      - smartrent-mysql:/var/lib/mysql
+
+volumes:
+  smartrent-mysql:
