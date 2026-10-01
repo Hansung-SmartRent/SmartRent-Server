@@ -36,10 +36,10 @@
 | [docs/CONVENTION.md](docs/CONVENTION.md) | 팀원 | 개발 규칙. 무엇이 기준 문서인지, 코드 규칙(시간·잠금·오류·비밀정보), 담당표, git 규칙(브랜치·커밋·PR·라벨), 규칙이 바뀔 때 함께 고칠 문서 |
 | [docs/design/기획안.md](docs/design/기획안.md) | 모두 | **무엇을 만드는지**의 기준. 계정·예약·수령·반납·경고·휴무·알림·AI 추천·관리자 기능의 규칙과 이유, 만들지 않는 것(12장). 팀이 정한 결정도 여기에 바로 적음 |
 | [docs/db/README.md](docs/db/README.md) | 백엔드 | **어떻게 저장하는지**. 표 22개와 칸, 삭제·보존, 대수 계산, **대여 상태 전이(기준)**, 판정 작업, 알림 종류 |
-| [docs/api/README.md](docs/api/README.md) | 백엔드, 프론트 | API 공통 규칙(날짜·오류·권한·잠금), 오류 코드 51개, API 80개의 담당과 이슈, 헷갈리기 쉬운 업무 규칙 |
+| [docs/api/README.md](docs/api/README.md) | 백엔드, 프론트 | API 공통 규칙(날짜·오류·권한·잠금), 오류 코드 51개, API 81개의 담당과 이슈, 헷갈리기 쉬운 업무 규칙 |
 | [docs/api/openapi.yaml](docs/api/openapi.yaml) | 백엔드, 프론트, 도구 | API 하나하나의 주소·요청·응답·오류를 기계가 읽는 형식(OpenAPI 3.0)으로. [Swagger Editor](https://editor.swagger.io)에 붙여 넣으면 화면으로 보임 |
 | [docs/외부연결.md](docs/외부연결.md) | 백엔드 | Gmail SMTP, FCM, Gemini API, 공휴일 공공데이터, S3의 준비물·환경변수·실패 처리·완료 기준, EC2 배포 요약 |
-| [docs/issues/README.md](docs/issues/README.md) | 팀원 | 작업 이슈 45개 목록, 순서(선행 관계), 각자 첫 작업. 이슈마다 파일 하나(`B1-01.md` …) |
+| [docs/issues/README.md](docs/issues/README.md) | 팀원 | 작업 이슈 46개 목록, 순서(선행 관계), 각자 첫 작업. 이슈마다 파일 하나(`B1-01.md` …) |
 | [fixtures/README.md](fixtures/README.md) | 백엔드 | 처음 넣는 데이터(실제 기자재 35종 + 예시 모델 8종, 가짜 계정, 공휴일, 대여 예시)와 **확인 사례 26개** 읽는 법 |
 | [.env.example](.env.example) | 팀원 | 필요한 환경변수 이름과 설명. 복사해서 `.env`로 씀(값은 올리지 않음) |
 | [.github/pull_request_template.md](.github/pull_request_template.md) | 팀원 | PR을 열면 자동으로 채워지는 양식 |
@@ -59,22 +59,24 @@
 
 ## 기술 스택
 
-| 구분 | 내용 | |
-|---|---|---|
-| 언어 | Java 21 | 확정 |
-| 프레임워크 | Spring Boot (버전은 B1-01에서 정함) | 확정 |
-| 빌드 | Gradle | 확정 |
-| DB | MySQL 8.0 | 확정 |
-| ORM | Spring Data JPA | 확정 |
-| 검증 | Bean Validation | 확정 |
-| 인증 | Spring Security + JWT | 확정 |
-| API 문서 | springdoc-openapi (Swagger) | 확정 |
-| 푸시 알림 | Firebase Cloud Messaging (FCM) | 확정 |
-| 인증 메일 | Gmail SMTP (개발용) | 추천 |
-| AI 추천 | Gemini API 무료 등급 (모델 ID는 B1-21에서 선정·실제 호출 확인) | 확정 |
-| 공휴일 | 공공데이터포털 한국천문연구원 특일 정보 | 확정 |
-| 서버 | AWS EC2 한 대(MySQL 같이 설치), 사진은 S3 | 확정 |
-| 테스트 | JUnit 5 | 확정 |
+원칙: **최신 안정판을 씁니다.** 최신이 아닌 것은 "이유"에 왜 그 버전인지 적습니다. 최신 버전은 2026-09-29에 확인했습니다.
+
+| 구분 | 쓰는 것 | 현재 최신 | 이유 | 상태 |
+|---|---|---|---|---|
+| 언어 | Java 21 (LTS) | 27(2026-09, LTS 아님), 최신 LTS는 25 | 27은 6개월 뒤 지원이 끝나고 Spring Boot 4.1이 26까지만 지원해 제외. 25 대신 21: 라이브러리·배포 이미지·오류 해결 자료가 가장 많이 쌓인 LTS | 확정 |
+| 프레임워크 | Spring Boot 4.1.x | 4.1.1 | 최신 안정판. 4.2는 11월 정식 예정인 시험판(M)이라 쓰지 않음. B1-01 때 더 새 안정판이 나왔으면 그것으로 | 확정 |
+| 빌드 | Gradle 9.x (Wrapper) | 9.8.0 | 최신. 따로 설치하지 않고 레포의 Wrapper가 같은 버전을 받음 | 확정 |
+| DB | MySQL 9.7 LTS | 9.7 LTS (2026-04) | 최신 LTS. 9.x 중간 버전(Innovation)은 다음 버전이 나오면 지원이 끝나 쓰지 않음 | 확정 |
+| ORM | Spring Data JPA | Spring Boot가 맞춘 버전 | 버전을 따로 고르지 않고 Spring Boot 4.1이 서로 맞춰 둔 버전을 씀(검증·보안도 같음) | 확정 |
+| 검증 | Bean Validation | Spring Boot가 맞춘 버전 | 요청 값 검사를 어노테이션으로 한 곳에서 | 확정 |
+| 인증 | Spring Security + JWT | Spring Boot가 맞춘 버전 | 앱이 쿠키 없이 토큰으로 로그인을 유지. refresh 토큰은 해시로 DB에 저장해 로그아웃·강제 만료 가능 | 확정 |
+| API 문서 | springdoc-openapi 3.x (Swagger) | 3.1.1 | 최신. Spring Boot 4는 3.x만 지원 | 확정 |
+| 푸시 알림 | Firebase Cloud Messaging (FCM) | 서비스라 버전 없음 | 무료, 안드로이드·iOS 모두 보냄 | 확정 |
+| 인증 메일 | Gmail SMTP (개발용) | 서비스라 버전 없음 | 무료, 앱 비밀번호만 있으면 바로 씀. 운영용 메일은 배포 전에 다시 정함 | 확정 |
+| AI 추천 | Gemini API 무료 등급 | 모델 ID는 B1-21에서 선정·실제 호출 확인 | 비용 없이 시작. 모델은 무료로 지원되는 것 중 최신으로 | 확정 |
+| 공휴일 | 공공데이터포털 한국천문연구원 특일 정보 | 서비스라 버전 없음 | 대체공휴일까지 나오는 공식 출처 | 확정 |
+| 서버 | AWS EC2 한 대(MySQL 같이 설치), 사진은 S3 | 서비스라 버전 없음 | 비용: RDS 없이 서버 한 대에 DB까지 둠. 사진은 서버 디스크 대신 S3 | 확정 |
+| 테스트 | JUnit 6 | 6.x | 최신. Spring Boot 4가 기본으로 씀 | 확정 |
 
 ## 프로젝트 구조 (추천, B1-01에서 확정)
 
@@ -119,4 +121,4 @@ cp .env.example .env     # 값 채우기(시작하기 5절)
 
 ## 배포
 
-AWS EC2 한 대에 서버와 MySQL 8.0, 사진은 S3, DB는 매일 `mysqldump`로 S3에 백업(추천). 절차는 이슈 [B1-25](docs/issues/B1-25.md)에서 정해 이 절을 채웁니다.
+AWS EC2 한 대에 서버와 MySQL 9.7, 사진은 S3, DB는 매일 `mysqldump`로 S3에 백업(확정). 절차는 이슈 [B1-25](docs/issues/B1-25.md)에서 정해 이 절을 채웁니다.

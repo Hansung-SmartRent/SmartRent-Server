@@ -3,7 +3,7 @@
 서버가 데이터를 **어떤 표에 어떻게 저장하는지**, 그리고 **대여 기록의 상태가 언제 어떻게 바뀌는지**를 정한 문서입니다. 상태가 바뀌는 규칙의 기준은 이 문서이고, [API 명세](../api/README.md)는 "어떤 API가 이 전이를 일으키는지"만 연결합니다.
 
 - 기능 규칙의 근거: [기획안](../design/기획안.md) (이하 "기획안 N장")
-- DB: MySQL 8.0, AWS EC2 안에 설치, RDS는 쓰지 않음 (확정, [외부 연결 6절](../외부연결.md#6-배포--aws-ec2-참고))
+- DB: MySQL 9.7, AWS EC2 안에 설치, RDS는 쓰지 않음 (확정, [외부 연결 6절](../외부연결.md#6-배포--aws-ec2-참고))
 - ORM: Spring Data JPA (확정, 옛 README)
 
 ## 표시 방법
@@ -12,7 +12,7 @@
 - **추천**: 문서에 근거가 없어 이 문서가 제안하는 값입니다. 팀이 확인하기 전까지 바꿀 수 있고, 바꾸면 이 문서를 먼저 고칩니다.
 - 표의 "필수"는 NOT NULL, "선택"은 NULL 허용입니다.
 
-## 1. 공통 약속 (추천)
+## 1. 공통 약속 (확정, C-01)
 
 | 항목 | 규칙 | 이유 |
 |---|---|---|
@@ -28,6 +28,8 @@
 
 ```mermaid
 erDiagram
+  USERS ||--o{ REFRESH_TOKENS : "로그인 유지"
+  USERS ||--o{ RENTAL_APPLICATIONS : "신청한다"
   USERS ||--o{ RENTALS : "빌린다"
   USERS ||--o{ WARNINGS : "받는다"
   USERS ||--o{ NOTIFICATIONS : "받는다"
@@ -35,14 +37,43 @@ erDiagram
   USERS ||--o{ PUSH_TOKENS : "등록한다"
   USERS ||--o{ INQUIRIES : "쓴다"
   USERS ||--o{ PURCHASE_REQUESTS : "쓴다"
+  USERS ||--o{ RECOMMENDATION_LOGS : "추천 요청"
+  USERS ||--o{ NOTICES : "쓴다(관리자)"
+  USERS ||--o{ AUDIT_LOGS : "처리한다(관리자)"
   EQUIPMENT_MODELS ||--o{ EQUIPMENT_UNITS : "기기"
   EQUIPMENT_MODELS ||--o{ MODEL_IMAGES : "사진"
-  EQUIPMENT_MODELS ||--o{ OPERATING_HOURS : "운영 시간 예외"
+  EQUIPMENT_MODELS ||--o{ OPERATING_HOURS : "운영 시간 변경"
+  EQUIPMENT_MODELS ||--o{ RENTAL_APPLICATIONS : "신청 대상"
   EQUIPMENT_MODELS ||--o{ RENTALS : "예약 대상"
-  EQUIPMENT_UNITS ||--o{ RENTALS : "실제로 건넨 기기"
+  EQUIPMENT_UNITS |o--o{ RENTALS : "실제로 건넨 기기"
   RENTAL_APPLICATIONS ||--|{ RENTALS : "한 번의 신청"
-  RENTALS ||--o{ WARNINGS : "사유"
+  RENTALS |o--o{ WARNINGS : "사유"
+
+  EMAIL_VERIFICATIONS {
+    VARCHAR email "인증번호 받은 주소"
+  }
+  LOGIN_FAILURES {
+    VARCHAR email PK "로그인 시도 주소"
+  }
+  HOLIDAYS {
+    DATE date PK
+  }
+  RETAINED_WARNINGS {
+    VARCHAR student_number "탈퇴한 학생의 학번"
+  }
+  STORAGE_DELETION_JOBS {
+    VARCHAR object_key "지울 파일 위치"
+  }
 ```
+
+- 표 22개가 모두 들어 있습니다. 선은 다른 표의 `id`를 가리키는 칸(`user_id`, `model_id`, `unit_id`, `application_id`, `rental_id`, `author_id`, `actor_id`)입니다.
+- `unit_id`(수령 전에는 비어 있음)와 경고의 `rental_id`는 비어 있을 수 있어 `|o`로 그렸습니다.
+- 아래 다섯 표는 일부러 선이 없습니다.
+  - `email_verifications`·`login_failures`: 가입 전이나 로그인 전에도 쓰므로 계정 id 대신 이메일로 찾습니다.
+  - `retained_warnings`: 계정이 지워진 뒤 학번으로 보관합니다.
+  - `holidays`: 모든 모델에 똑같이 적용됩니다.
+  - `storage_deletion_jobs`: 탈퇴 뒤에도 지울 파일을 잃지 않도록 계정과 묶지 않습니다.
+- 알림의 `related_type`·`related_id`는 여러 표를 가리킬 수 있어 선으로 그리지 않습니다(3절). `recommendation_logs.model_id_used`는 기자재 모델이 아니라 AI 모델 이름입니다.
 
 | 표 | 무엇을 저장하나 | 담당 |
 |---|---|---|
@@ -71,7 +102,7 @@ erDiagram
 
 ## 3. 표별 칸
 
-### users (확정: 기획안 1·7장, 추천: 칸 이름과 자료형)
+### users (확정: 기획안 1·7장, 칸 이름과 자료형은 C-01)
 
 | 칸 | 자료형 | 필수 | 뜻 |
 |---|---|---|---|
@@ -83,7 +114,8 @@ erDiagram
 | student_number | VARCHAR(20) | 선택, 유일 | 학번. 같은 학번으로 두 계정 불가(기획안 1장). 관리자는 비움 |
 | approval | VARCHAR(10) | 필수 | `NONE`(학생증 미제출) / `PENDING` / `APPROVED` / `REJECTED`. 관리자는 `APPROVED` |
 | reject_reason | VARCHAR(200) | 선택 | 반려 사유(기획안 1장) |
-| student_id_image_key | VARCHAR(200) | 선택 | S3에 올린 학생증 사진 위치. **승인·반려하면 바로 지우고 비움**(기획안 1장) |
+| student_id_image_key | VARCHAR(200) | 선택 | S3에 올린 학생증 사진(원본) 위치. 실물 학생증 사진이나 헤이영 캡처. **승인·반려하면 바로 지우고 비움**(기획안 1장) |
+| student_id_crop_key | VARCHAR(200) | 선택 | 서버가 원본에서 필요한 부분을 잘라 저장한 사진 위치(B1-26). 찾지 못했거나 학생이 원본으로 제출하면 비움. **승인·반려하면 원본과 함께 지우고 비움**(기획안 1장). 제출 전 미리 보기 사진은 어디에도 저장하지 않음 |
 | profile_image_key | VARCHAR(200) | 선택 | 프로필 사진 위치. 학생이 바꾸거나 지움(기획안 1장) |
 | suspended_until | DATETIME | 선택 | 이 시각까지 이용 정지 |
 | suspended_until_return | BOOLEAN | 필수 | 정지됐지만 보유 기기를 아직 반납하지 않아 6개월이 시작되지 않은 상태(기획안 7장) |
@@ -93,7 +125,7 @@ erDiagram
 - **관리자 계정은 가입 API로 만들지 않고 DB에 직접 넣습니다**(기획안 1장). 처음 데이터는 [fixtures/users.json](../../fixtures/users.json).
 - **정지 중인지 판단(확정, 기획안 7장):** `suspended_until_return = true`이거나 `suspended_until`이 지금보다 뒤이면 정지 중입니다.
 
-### email_verifications (추천)
+### email_verifications (확정, C-01)
 
 | 칸 | 자료형 | 필수 | 뜻 |
 |---|---|---|---|
@@ -105,7 +137,7 @@ erDiagram
 | used_at | DATETIME | 선택 | 한 번 쓰면 다시 못 씀 |
 | created_at | DATETIME | 필수 | |
 
-- 재발송하면 같은 이메일·목적의 옛 번호는 쓸 수 없게 합니다(추천).
+- 재발송하면 같은 이메일·목적의 옛 번호는 쓸 수 없게 합니다(확정).
 
 ### login_failures (확정: 기획안 1장)
 
@@ -117,14 +149,14 @@ erDiagram
 
 - 앱과 같이 **5번 연속 틀리면 5분 동안 막습니다.** 로그인에 성공하면 행을 지웁니다. 탈퇴하면 그 이메일의 행도 지웁니다.
 
-### refresh_tokens (추천)
+### refresh_tokens (확정, C-01)
 
 | 칸 | 자료형 | 필수 | 뜻 |
 |---|---|---|---|
 | id | BIGINT | 필수 | |
 | user_id | BIGINT | 필수 | |
 | token_hash | VARCHAR(100) | 필수, 유일 | 리프레시 토큰의 해시. 토큰 원문은 저장하지 않음 |
-| expires_at | DATETIME | 필수 | 발급 + 14일(추천) |
+| expires_at | DATETIME | 필수 | 발급 + 14일(확정) |
 | created_at | DATETIME | 필수 | |
 
 - 로그아웃(`POST /auth/logout`)하면 그 토큰 행을 지웁니다. 비밀번호를 바꾸거나 탈퇴하면 그 사용자의 행을 모두 지웁니다.
@@ -163,7 +195,7 @@ erDiagram
 
 - **모델 이름 중복 금지(확정):** 운영 중인 모델끼리는 `name_key`가 같을 수 없습니다. 관리자가 모델을 추가하거나 이름을 바꿀 때 겹치면 `409 MODEL_NAME_DUPLICATE`로 거절합니다. 사진 인식은 이 `name_key`로 찾으므로 결과가 항상 하나 이하이고, 서버가 여러 모델 중 하나를 임의로 고르는 일이 없습니다. 처음 데이터를 넣을 때도 같은 검사를 하고, 겹치면 서버를 켜지 않고 오류를 냅니다(fixtures 43종은 겹치지 않음).
 
-### model_images (확정: 정리 문서, 추천: 칸)
+### model_images (확정: 정리 문서, 칸은 C-01)
 
 | 칸 | 자료형 | 필수 | 뜻 |
 |---|---|---|---|
@@ -243,7 +275,7 @@ erDiagram
 | cancel_reason | VARCHAR(100) | 선택 | 취소·노쇼 사유 |
 | due_notified | BOOLEAN | 필수 | 반납 전 알림을 보냈는지. 연장하면 다시 `false` |
 | late_warned | BOOLEAN | 필수 | 연체 경고를 붙였는지 |
-| version | BIGINT | 필수 | JPA `@Version`. 두 관리자가 같은 건을 동시에 처리하는 것을 막음(추천) |
+| version | BIGINT | 필수 | JPA `@Version`. 두 관리자가 같은 건을 동시에 처리하는 것을 막음(확정) |
 | created_at, updated_at | DATETIME | 필수 | |
 
 ### warnings (확정: 기획안 7장)
@@ -284,7 +316,7 @@ erDiagram
 | notification_settings | user_id(기본 키), due_enabled(반납 전 알림 세 가지를 켜고 끄는 스위치 하나, 기본 `true`) |
 | push_tokens | id, user_id, token(유일), platform(`IOS`/`ANDROID`), updated_at |
 
-- 알림함 기록은 항상 남기고, 휴대폰 푸시는 설정과 토큰이 있을 때만 보냅니다(추천).
+- 알림함 기록은 항상 남기고, 휴대폰 푸시는 설정과 토큰이 있을 때만 보냅니다(확정).
 
 ### storage_deletion_jobs (삭제 재시도를 위한 내부 저장 구조)
 
@@ -298,8 +330,9 @@ erDiagram
 | attempt_count | INT | 필수 | 시도 횟수, 처음 0 |
 
 - B1-08이 저장·재시도 작업을 소유합니다. 승인·반려 트랜잭션에서 삭제 대상 키를 먼저 이 표에 남기고 사용자 사진 키를 비웁니다. 커밋 직후 즉시 삭제를 시도합니다. 삭제 성공 또는 이미 없는 파일임을 확인하면 작업 행을 지웁니다. 실패하면 행을 보존하고 관리자 OPERATIONS 알림을 남깁니다.
+- 승인·반려 때 원본(`student_id_image_key`)과 잘린 사진(`student_id_crop_key`) 키를 둘 다 이 표에 남기고 두 칸을 비웁니다.
 - 승인·반려 후에는 학생증 조회 API가 사진 주소를 다시 발급하지 않습니다. 재시도 대상을 사용자 행에만 두지 않아 탈퇴·재시작 후에도 지울 파일을 잃지 않습니다. 사진 키·사진 내용은 로그나 관리자 알림에 노출하지 않습니다.
-- 재시도 간격은 추천 1분(B1-08 착수 계획에서 확인). 새 외부 서비스는 도입하지 않고 서버 내부 작업으로 처리합니다. 재시작 때 남은 작업을 읽습니다.
+- 재시도 간격은 1분(확정). 새 외부 서비스는 도입하지 않고 서버 내부 작업으로 처리합니다. 재시작 때 남은 작업을 읽습니다.
 
 ### notices, inquiries, purchase_requests, recommendation_logs, audit_logs
 
@@ -308,7 +341,7 @@ erDiagram
 | notices | id, title, body, author_id, created_at, updated_at | 기획안 11장 |
 | inquiries | id, user_id, title, body, response(선택), responded_at(선택), created_at | 기획안 11장 |
 | purchase_requests | inquiries와 같은 칸 | 기획안 11장 |
-| recommendation_logs | id, user_id, purpose(200자), result_json, model_id_used, created_at | 기획안 10장(추천: 기록을 남겨 비용과 품질을 확인) |
+| recommendation_logs | id, user_id, purpose(200자), result_json, model_id_used, created_at | 기획안 10장(확정: 기록을 남겨 비용과 품질을 확인) |
 | audit_logs | id, action, detail, actor_id, retain_until(선택), created_at | 기획안 11장 |
 
 ## 4. 삭제와 보존 규칙 (확정)
@@ -426,7 +459,7 @@ stateDiagram-v2
 | 반납 전 알림(1분마다) | 장기는 7일 전, 2일 이상은 1일 전, 하루 대여는 15분 전. 한 번만(`due_notified`), 설정이 꺼져 있으면 알림함만 | 기획안 9장 |
 | 정지 해제(1분마다) | `suspended_until`이 지남 → 비우고 유효 경고에 `expires_at` 넣음 | 기획안 7장 |
 | 보관 삭제(하루 1번) | `retained_warnings.retain_until`이 지남 → 지움. 탈퇴 관리 기록의 학번을 "탈퇴 회원"으로 | 기획안 1장 |
-| 공휴일 받기 | 매일 1회(추천). 실패하면 기존 달력 유지, 관리자에게 알림 | 기획안 8장 |
+| 공휴일 받기 | 매일 1회, 새벽 4시(확정). 실패하면 기존 달력 유지, 관리자에게 알림 | 기획안 8장 |
 
 ### 경고와 정지 (확정: 기획안 7장)
 
@@ -437,7 +470,7 @@ stateDiagram-v2
 - 관리자가 경고를 취소해 **유효 경고가 3회 미만이 되면 정지를 풉니다**(두 정지 칸을 비우고 `return_required = false`).
 - 반납 시각을 정정하면 연체 경고를 다시 계산합니다. 기한 안으로 고치면 그 연체 경고를 취소하고, 다시 늦게 고치면 되살립니다. 6개월 정지가 반납으로 시작됐다면 마지막 실제 반납 시각부터 다시 셉니다.
 
-## 8. 알림 종류 (확정: 기획안 9장, 추천: 코드 이름)
+## 8. 알림 종류 (확정: 기획안 9장, 코드 이름은 C-03)
 
 | kind | 언제 | 끌 수 있음 |
 |---|---|---|
