@@ -1,0 +1,39 @@
+# 값은 프로젝트 루트의 .env(또는 OS 환경변수)에서 읽습니다. 이름은 .env.example과 같습니다.
+# .env는 properties 형식(이름=값)이고, 같은 이름의 OS 환경변수가 있으면 그쪽이 우선입니다.
+spring:
+  application:
+    name: smartrent
+  config:
+    import: "optional:file:.env[.properties]"
+  autoconfigure:
+    # 로그인 전(B1-04 전)에는 임시 계정·비밀번호를 만들지 않게 끔. B1-04에서 지웁니다.
+    exclude: org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: Asia/Seoul
+
+server:
+  port: ${SERVER_PORT:8080}
+
+---
+# 개발용(각자 컴퓨터)
+spring:
+  config:
+    activate:
+      on-profile: local
+
+---
+# AWS 서버(B1-25에서 채움)
+spring:
+  config:
+    activate:
+      on-profile: prod

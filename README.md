@@ -64,7 +64,7 @@
 | 구분 | 쓰는 것 | 현재 최신 | 이유 | 상태 |
 |---|---|---|---|---|
 | 언어 | Java 21 (LTS) | 27(2026-09, LTS 아님), 최신 LTS는 25 | 27은 6개월 뒤 지원이 끝나고 Spring Boot 4.1이 26까지만 지원해 제외. 25 대신 21: 라이브러리·배포 이미지·오류 해결 자료가 가장 많이 쌓인 LTS | 확정 |
-| 프레임워크 | Spring Boot 4.1.x | 4.1.1 | 최신 안정판. 4.2는 11월 정식 예정인 시험판(M)이라 쓰지 않음. B1-01 때 더 새 안정판이 나왔으면 그것으로 | 확정 |
+| 프레임워크 | Spring Boot 4.1.1 | 4.1.1 | 최신 안정판(B1-01에서 2026-10-01 확인). 4.2는 11월 정식 예정인 시험판(M)이라 쓰지 않음 | 확정 |
 | 빌드 | Gradle 9.x (Wrapper) | 9.8.0 | 최신. 따로 설치하지 않고 레포의 Wrapper가 같은 버전을 받음 | 확정 |
 | DB | MySQL 9.7 LTS | 9.7 LTS (2026-04) | 최신 LTS. 9.x 중간 버전(Innovation)은 다음 버전이 나오면 지원이 끝나 쓰지 않음 | 확정 |
 | ORM | Spring Data JPA | Spring Boot가 맞춘 버전 | 버전을 따로 고르지 않고 Spring Boot 4.1이 서로 맞춰 둔 버전을 씀(검증·보안도 같음) | 확정 |
@@ -78,15 +78,16 @@
 | 서버 | AWS EC2 한 대(MySQL 같이 설치), 사진은 S3 | 서비스라 버전 없음 | 비용: RDS 없이 서버 한 대에 DB까지 둠. 사진은 서버 디스크 대신 S3 | 확정 |
 | 테스트 | JUnit 6 | 6.x | 최신. Spring Boot 4가 기본으로 씀 | 확정 |
 
-## 프로젝트 구조 (추천, B1-01에서 확정)
+## 프로젝트 구조 (확정, B1-01)
 
 ```
 src/main/java/kr/ac/hansung/smartrent/
 ├── global/
-│   ├── config/          # 보안, Swagger, Clock, 스케줄러 설정
+│   ├── config/          # 보안, Swagger, Clock, 스케줄러 설정, 필수 설정 검사
 │   ├── security/        # JWT 발급·검증
 │   ├── exception/       # 공통 예외, 오류 코드, 전역 예외 처리
-│   └── response/        # 공통 응답 형식
+│   ├── response/        # 공통 응답 형식
+│   └── health/          # 배포 확인용 GET /api/v1/health
 └── domain/              # 기능별 controller → service → repository → entity → dto
     ├── auth/            # 가입, 인증 메일, 로그인, 로그인 잠금          (백엔드 1)
     ├── user/            # 내 정보, 학생증, 탈퇴, 관리자 학생 관리      (백엔드 1)
@@ -101,12 +102,13 @@ src/main/java/kr/ac/hansung/smartrent/
     └── notification/    # 알림함, 푸시, 알림 설정                       (백엔드 2)
 ```
 
-## 실행과 시험 — B1-01 이후 확인 필요
+## 실행과 시험
 
 ```bash
 cp .env.example .env     # 값 채우기(시작하기 5절)
+docker compose up -d mysql
 ./gradlew bootRun        # 윈도우: .\gradlew.bat bootRun
-./gradlew test
+./gradlew test           # Docker가 켜져 있어야 함(시험용 MySQL을 따로 띄움)
 ```
 
 - API 주소: http://localhost:8080/api/v1
