@@ -13,6 +13,8 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
@@ -59,6 +61,13 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(HttpMessageNotReadableException.class)
 	public ResponseEntity<ApiResponse<Void>> handleNotReadable(HttpMessageNotReadableException e) {
 		ErrorCode code = ErrorCode.VALIDATION_ERROR;
+		return ResponseEntity.status(code.getStatus()).body(ApiResponse.fail(code));
+	}
+
+	/** 사진이 받는 한도보다 크거나 빠짐(외부 연결 5절) */
+	@ExceptionHandler({MaxUploadSizeExceededException.class, MissingServletRequestPartException.class})
+	public ResponseEntity<ApiResponse<Void>> handleFile(Exception e) {
+		ErrorCode code = ErrorCode.FILE_INVALID;
 		return ResponseEntity.status(code.getStatus()).body(ApiResponse.fail(code));
 	}
 

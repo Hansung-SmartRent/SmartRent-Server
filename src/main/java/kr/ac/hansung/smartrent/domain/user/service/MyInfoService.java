@@ -1,8 +1,5 @@
 package kr.ac.hansung.smartrent.domain.user.service;
 
-import java.time.Clock;
-import java.time.LocalDateTime;
-
 import kr.ac.hansung.smartrent.domain.auth.EmailPolicy;
 import kr.ac.hansung.smartrent.domain.auth.entity.VerificationPurpose;
 import kr.ac.hansung.smartrent.domain.auth.repository.RefreshTokenRepository;
@@ -14,7 +11,6 @@ import kr.ac.hansung.smartrent.domain.user.entity.User;
 import kr.ac.hansung.smartrent.domain.user.repository.UserRepository;
 import kr.ac.hansung.smartrent.global.exception.BusinessException;
 import kr.ac.hansung.smartrent.global.exception.ErrorCode;
-import kr.ac.hansung.smartrent.global.port.ActiveWarningCounter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -29,8 +25,7 @@ public class MyInfoService {
 	private final RefreshTokenRepository refreshTokenRepository;
 	private final EmailVerificationService verificationService;
 	private final PasswordEncoder passwordEncoder;
-	private final ActiveWarningCounter warningCounter;
-	private final Clock clock;
+	private final MeAssembler meAssembler;
 
 	@Transactional(readOnly = true)
 	public MeResponse me(Long userId) {
@@ -63,8 +58,7 @@ public class MyInfoService {
 		return userRepository.findById(userId).orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
 	}
 
-	/** 유효 경고 수는 B2-12의 ActiveWarningCounter(그 전까지 0) */
 	private MeResponse toMe(User user) {
-		return MeResponse.of(user, warningCounter.count(user.getId()), LocalDateTime.now(clock));
+		return meAssembler.toMe(user);
 	}
 }
