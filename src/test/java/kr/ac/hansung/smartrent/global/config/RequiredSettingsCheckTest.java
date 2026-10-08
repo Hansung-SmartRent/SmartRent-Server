@@ -14,7 +14,8 @@ class RequiredSettingsCheckTest {
 		MockEnvironment env = new MockEnvironment()
 			.withProperty("DB_URL", "jdbc:mysql://localhost:3306/smartrent")
 			.withProperty("DB_USERNAME", "smartrent")
-			.withProperty("DB_PASSWORD", "secret-value");
+			.withProperty("DB_PASSWORD", "secret-value")
+			.withProperty("JWT_SECRET", "jwt-secret-value-0123456789-0123456789");
 
 		assertThatCode(() -> RequiredSettingsCheck.check(env)).doesNotThrowAnyException();
 	}
@@ -24,7 +25,8 @@ class RequiredSettingsCheckTest {
 		MockEnvironment env = new MockEnvironment()
 			.withProperty("DB_URL", "jdbc:mysql://localhost:3306/smartrent")
 			.withProperty("DB_USERNAME", "smartrent-user")
-			.withProperty("DB_PASSWORD", "");
+			.withProperty("DB_PASSWORD", "")
+			.withProperty("JWT_SECRET", "jwt-secret-value-0123456789-0123456789");
 
 		assertThatThrownBy(() -> RequiredSettingsCheck.check(env))
 			.isInstanceOf(IllegalStateException.class)

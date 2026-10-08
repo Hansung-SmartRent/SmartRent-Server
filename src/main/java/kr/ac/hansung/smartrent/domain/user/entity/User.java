@@ -71,4 +71,9 @@ public class User extends BaseTimeEntity {
 
 	@Column(name = "suspension_started_by_return", nullable = false)
 	private boolean suspensionStartedByReturn;
+
+	/** 정지 중인지(DB 설계 3절): 반납 전이라 6개월이 아직 시작 안 됐거나, 정지 종료 시각이 지금보다 뒤 */
+	public boolean isSuspended(java.time.LocalDateTime now) {
+		return suspendedUntilReturn || (suspendedUntil != null && suspendedUntil.isAfter(now));
+	}
 }

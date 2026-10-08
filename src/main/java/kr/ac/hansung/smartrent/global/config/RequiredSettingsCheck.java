@@ -14,7 +14,7 @@ import org.springframework.util.StringUtils;
  */
 public class RequiredSettingsCheck implements ApplicationListener<ApplicationEnvironmentPreparedEvent> {
 
-	static final List<String> REQUIRED = List.of("DB_URL", "DB_USERNAME", "DB_PASSWORD");
+	static final List<String> REQUIRED = List.of("DB_URL", "DB_USERNAME", "DB_PASSWORD", "JWT_SECRET");
 
 	@Override
 	public void onApplicationEvent(ApplicationEnvironmentPreparedEvent event) {
