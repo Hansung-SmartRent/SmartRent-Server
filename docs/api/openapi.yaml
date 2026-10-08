@@ -7016,7 +7016,7 @@ components:
         reason:
           type: string
           maxLength: 200
-          example: 학생증 사진이 흐려서 학번을 확인할 수 없습니다.
+          example: 제출한 사진으로 학생증을 확인할 수 없습니다. 얼굴·이름·학번이 잘 보이는 사진으로 다시 제출해 주세요.
       required:
       - reason
     StudentPatch:
