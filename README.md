@@ -39,7 +39,7 @@
 | [docs/api/README.md](docs/api/README.md) | 백엔드, 프론트 | API 공통 규칙(날짜·오류·권한·잠금), 오류 코드 52개, API 80개의 담당과 이슈, 헷갈리기 쉬운 업무 규칙 |
 | [docs/api/openapi.yaml](docs/api/openapi.yaml) | 백엔드, 프론트, 도구 | API 하나하나의 주소·요청·응답·오류를 기계가 읽는 형식(OpenAPI 3.0)으로. [Swagger Editor](https://editor.swagger.io)에 붙여 넣으면 화면으로 보임 |
 | [docs/외부연결.md](docs/외부연결.md) | 백엔드 | Gmail SMTP, FCM, Gemini API, 공휴일 공공데이터, S3의 준비물·환경변수·실패 처리·완료 기준, EC2 배포 요약 |
-| [docs/issues/README.md](docs/issues/README.md) | 팀원 | 작업 이슈 45개 목록, 순서(선행 관계), 각자 첫 작업. 이슈마다 파일 하나(`B1-01.md` …) |
+| [docs/issues/README.md](docs/issues/README.md) | 팀원 | 작업 이슈 44개 목록, 순서(선행 관계), 각자 첫 작업. 이슈마다 파일 하나(`B1-01.md` …) |
 | [fixtures/README.md](fixtures/README.md) | 백엔드 | 처음 넣는 데이터(실제 기자재 35종 + 예시 모델 8종, 가짜 계정, 공휴일, 대여 예시)와 **확인 사례 26개** 읽는 법 |
 | [.env.example](.env.example) | 팀원 | 필요한 환경변수 이름과 설명. 복사해서 `.env`로 씀(값은 올리지 않음) |
 | [.github/pull_request_template.md](.github/pull_request_template.md) | 팀원 | PR을 열면 자동으로 채워지는 양식 |
@@ -53,7 +53,7 @@
 |---|---|---|
 | 백엔드 1 | @umckee5696 | 초기 세팅, 인증·유저, 기자재·기기 코드·인식 결과 조회, 운영 시간·휴무일, 사진 저장, 기기 이상 신고, AI 추천, 공지·문의·구매 요청, 통계, 배포 |
 | 백엔드 2 | @OSJ99071 | 예약, 수령, 현장 대여, 반납, 연장, 정정, 판정 작업, 경고·정지, 알림(알림함·푸시·설정) |
-| 공동 | | ERD 확정, API 명세 프론트 검토, 추천값 확정 |
+| 공동 | | ERD 확정, 추천값 확정 |
 
 이슈별 담당은 [이슈 목록](docs/issues/README.md), API별 담당은 [API 명세 2절](docs/api/README.md#2-전체-api-목록과-담당).
 
