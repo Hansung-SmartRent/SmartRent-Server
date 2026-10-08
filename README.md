@@ -36,10 +36,10 @@
 | [docs/CONVENTION.md](docs/CONVENTION.md) | 팀원 | 개발 규칙. 무엇이 기준 문서인지, 코드 규칙(시간·잠금·오류·비밀정보), 담당표, git 규칙(브랜치·커밋·PR·라벨), 규칙이 바뀔 때 함께 고칠 문서 |
 | [docs/design/기획안.md](docs/design/기획안.md) | 모두 | **무엇을 만드는지**의 기준. 계정·예약·수령·반납·경고·휴무·알림·AI 추천·관리자 기능의 규칙과 이유, 만들지 않는 것(12장). 팀이 정한 결정도 여기에 바로 적음 |
 | [docs/db/README.md](docs/db/README.md) | 백엔드 | **어떻게 저장하는지**. 표 22개와 칸, 삭제·보존, 대수 계산, **대여 상태 전이(기준)**, 판정 작업, 알림 종류 |
-| [docs/api/README.md](docs/api/README.md) | 백엔드, 프론트 | API 공통 규칙(날짜·오류·권한·잠금), 오류 코드 52개, API 81개의 담당과 이슈, 헷갈리기 쉬운 업무 규칙 |
+| [docs/api/README.md](docs/api/README.md) | 백엔드, 프론트 | API 공통 규칙(날짜·오류·권한·잠금), 오류 코드 52개, API 80개의 담당과 이슈, 헷갈리기 쉬운 업무 규칙 |
 | [docs/api/openapi.yaml](docs/api/openapi.yaml) | 백엔드, 프론트, 도구 | API 하나하나의 주소·요청·응답·오류를 기계가 읽는 형식(OpenAPI 3.0)으로. [Swagger Editor](https://editor.swagger.io)에 붙여 넣으면 화면으로 보임 |
 | [docs/외부연결.md](docs/외부연결.md) | 백엔드 | Gmail SMTP, FCM, Gemini API, 공휴일 공공데이터, S3의 준비물·환경변수·실패 처리·완료 기준, EC2 배포 요약 |
-| [docs/issues/README.md](docs/issues/README.md) | 팀원 | 작업 이슈 46개 목록, 순서(선행 관계), 각자 첫 작업. 이슈마다 파일 하나(`B1-01.md` …) |
+| [docs/issues/README.md](docs/issues/README.md) | 팀원 | 작업 이슈 45개 목록, 순서(선행 관계), 각자 첫 작업. 이슈마다 파일 하나(`B1-01.md` …) |
 | [fixtures/README.md](fixtures/README.md) | 백엔드 | 처음 넣는 데이터(실제 기자재 35종 + 예시 모델 8종, 가짜 계정, 공휴일, 대여 예시)와 **확인 사례 26개** 읽는 법 |
 | [.env.example](.env.example) | 팀원 | 필요한 환경변수 이름과 설명. 복사해서 `.env`로 씀(값은 올리지 않음) |
 | [.github/pull_request_template.md](.github/pull_request_template.md) | 팀원 | PR을 열면 자동으로 채워지는 양식 |

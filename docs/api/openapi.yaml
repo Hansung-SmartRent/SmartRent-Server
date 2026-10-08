@@ -183,75 +183,6 @@ paths:
                     message: 이미 가입된 이메일입니다.
                     data: null
                     errorCode: EMAIL_ALREADY_USED
-  /auth/student-id-preview:
-    post:
-      tags:
-      - 인증
-      summary: 학생증 사진 자르기 미리 보기
-      operationId: postAuthStudentIdPreview
-      description: '학생이 고른 학생증 사진(실물 학생증 사진이나 헤이영 QR 화면 캡처)에서 필요한 부분(실물은 카드 안쪽, 헤이영은 윗부분)을 잘라 돌려준다. 사진은 저장소·DB·로그 어디에도 남기지 않는다. 가입 중에는 email과 그 이메일의 가입 인증번호 code를 함께 보내며 인증번호는 소모되지 않는다. 재제출 때는 로그인 토큰으로 부르고 email·code는 보내지 않는다. 자르기에 실패하면 cropped=false, image=null이며 앱은 고른 원본을 보여 준다(기획안 1장).
-
-
-        **담당:** 백엔드 1 · **권한:** 없음(가입 인증번호) 또는 학생 · **이슈:** B1-26'
-      security:
-      - {}
-      - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/StudentIdPreviewRequest'
-      responses:
-        '200':
-          description: 성공
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/ApiResponse'
-                - type: object
-                  properties:
-                    data:
-                      $ref: '#/components/schemas/StudentIdPreview'
-        '400':
-          description: 'VALIDATION_ERROR: 필수값 누락, 형식 오류 / FILE_INVALID: 형식·크기 / OTP_INVALID: 인증번호 불일치·이미 사용·다른 이메일 / OTP_EXPIRED: 5분 지남'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              examples:
-                FILE_INVALID:
-                  value:
-                    success: false
-                    message: jpg 또는 png 사진을 올려 주세요.
-                    data: null
-                    errorCode: FILE_INVALID
-                OTP_INVALID:
-                  value:
-                    success: false
-                    message: 인증 코드가 올바르지 않습니다.
-                    data: null
-                    errorCode: OTP_INVALID
-                OTP_EXPIRED:
-                  value:
-                    success: false
-                    message: 인증 코드가 만료되었습니다. 코드를 다시 받아 주세요.
-                    data: null
-                    errorCode: OTP_EXPIRED
-        '401':
-          description: 'UNAUTHORIZED: 토큰 없음·만료·위조(토큰으로 부를 때)'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              examples:
-                UNAUTHORIZED:
-                  value:
-                    success: false
-                    message: 로그인이 필요합니다.
-                    data: null
-                    errorCode: UNAUTHORIZED
   /auth/login:
     post:
       tags:
@@ -577,7 +508,7 @@ paths:
       - 내 정보
       summary: 학생증 제출·재제출
       operationId: postUsersMeStudentId
-      description: '이름, 학번, 학생증 사진을 제출해 approval을 PENDING으로 바꾼다. 사진은 실물 학생증 사진이나 헤이영 전자학생증 QR 화면 캡처이며 QR은 검사하지 않는다. 제출 전 POST /auth/student-id-preview로 자른 결과를 미리 본다. useCrop=true면 서버가 다시 잘라 따로 저장하고 못 찾으면 원본만 둔다. useCrop=false면 원본만 저장한다(B1-26). 반려된 학생은 횟수 제한 없이 다시 낸다(기획안 1장). 같은 학번으로 탈퇴 보관 경고가 있으면 승인할 때 되살린다(DB 설계 3절).
+      description: '이름, 학번, 학생증 사진을 제출해 approval을 PENDING으로 바꾼다. 사진은 실물 학생증 사진이나 헤이영 전자학생증 QR 화면 캡처이며 QR은 검사하지 않는다. 사진은 학생이 앱에서 카드 틀(16:10)에 맞춰 자른 한 장이며 서버는 자르거나 내용을 검사하지 않는다. 반려된 학생은 횟수 제한 없이 다시 낸다(기획안 1장). 같은 학번으로 탈퇴 보관 경고가 있으면 승인할 때 되살린다(DB 설계 3절).
 
 
         **담당:** 백엔드 1 · **권한:** 학생 · **이슈:** B1-07
@@ -6260,37 +6191,6 @@ components:
       required:
       - newEmail
       - code
-    StudentIdPreviewRequest:
-      type: object
-      properties:
-        image:
-          type: string
-          format: binary
-          description: 학생증 사진(jpg/png, 10MB 이하). 실물 학생증 사진이나 헤이영 QR 화면 캡처
-        email:
-          type: string
-          format: email
-          description: 가입 중일 때만. 인증번호를 받은 이메일
-          example: newstudent@hansung.ac.kr
-        code:
-          type: string
-          pattern: ^[0-9]{6}$
-          description: 가입 중일 때만. 그 이메일의 가입 인증번호(소모하지 않음)
-          example: '483920'
-      required:
-      - image
-    StudentIdPreview:
-      type: object
-      properties:
-        cropped:
-          type: boolean
-          description: 필요한 부분을 찾아 잘랐는지. false면 앱은 고른 원본을 보여 준다
-          example: true
-        image:
-          type: string
-          format: byte
-          description: 잘린 사진(JPEG, base64). cropped=false면 null
-          nullable: true
     StudentIdSubmit:
       type: object
       properties:
@@ -6305,11 +6205,7 @@ components:
         image:
           type: string
           format: binary
-          description: 학생증 사진 원본(jpg/png, 10MB 이하). 실물 학생증 사진이나 헤이영 QR 화면 캡처
-        useCrop:
-          type: boolean
-          default: true
-          description: true면 서버가 다시 잘라 원본과 함께 저장(못 찾으면 원본만). 학생이 "원본으로 제출"을 고르면 false
+          description: 학생이 앱에서 카드 틀(16:10)에 맞춰 자른 학생증 사진(jpg/png, 10MB 이하). 실물 학생증이나 헤이영 캡처
       required:
       - name
       - studentNumber
@@ -7104,11 +7000,7 @@ components:
         properties:
           studentIdImageUrl:
             type: string
-            description: 학생증 원본 사진의 S3 임시 주소. 관리자만 받음. 승인·반려 뒤에는 null
-            nullable: true
-          studentIdCropUrl:
-            type: string
-            description: 서버가 필요한 부분(실물은 카드 안쪽, 헤이영은 윗부분)을 잘라 저장한 사진의 S3 임시 주소(B1-26). 관리자만 받음. 찾지 못했거나 승인·반려 뒤에는 null이며 앱은 원본을 보여 준다
+            description: 학생이 제출한 학생증 사진(앱에서 자른 한 장)의 S3 임시 주소. 관리자만 받음. 승인·반려 뒤에는 null
             nullable: true
           warnings:
             type: array
