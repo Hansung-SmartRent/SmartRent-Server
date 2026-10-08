@@ -48,4 +48,14 @@ public class EmailVerification extends BaseCreatedEntity {
 
 	@Column(name = "used_at", nullable = true)
 	private LocalDateTime usedAt;
+
+	/** 한 번 쓰거나, 다시 보내서 옛 번호가 되면 쓸 수 없게 함 */
+	public void markUsed(LocalDateTime now) {
+		this.usedAt = now;
+	}
+
+	/** 보낸 시각 + 5분까지 유효(그 시각 포함) */
+	public boolean isExpired(LocalDateTime now) {
+		return now.isAfter(expiresAt);
+	}
 }

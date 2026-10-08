@@ -72,6 +72,16 @@ public class User extends BaseTimeEntity {
 	@Column(name = "suspension_started_by_return", nullable = false)
 	private boolean suspensionStartedByReturn;
 
+	/** 새 비밀번호(BCrypt 해시)로 바꿈 */
+	public void changePassword(String passwordHash) {
+		this.passwordHash = passwordHash;
+	}
+
+	/** 새 학교 이메일(소문자)로 바꿈 */
+	public void changeEmail(String email) {
+		this.email = email;
+	}
+
 	/** 정지 중인지(DB 설계 3절): 반납 전이라 6개월이 아직 시작 안 됐거나, 정지 종료 시각이 지금보다 뒤 */
 	public boolean isSuspended(java.time.LocalDateTime now) {
 		return suspendedUntilReturn || (suspendedUntil != null && suspendedUntil.isAfter(now));
