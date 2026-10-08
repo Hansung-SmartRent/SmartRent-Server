@@ -51,10 +51,13 @@ public class SecurityConfig {
 		return http.build();
 	}
 
-	/** 로그인 없이 부르는 주소에서는 Authorization 헤더를 읽지 않음(만료된 토큰이 붙어 와도 토큰 새로 받기가 되도록) */
+	/** 인증번호 보내기는 이메일 변경(EMAIL_CHANGE) 때 로그인한 사용자를 알아야 해서, 토큰이 붙어 오면 읽음 */
+	private static final RequestMatcher EMAIL_CODES = PathPatternRequestMatcher.withDefaults().matcher("/api/v1/auth/email-codes");
+
+	/** 로그인 없이 부르는 주소에서는 Authorization 헤더를 읽지 않음(만료된 토큰이 붙어 와도 토큰 새로 받기가 되도록). 인증번호 보내기만 예외 */
 	private static BearerTokenResolver bearerTokenResolver() {
 		DefaultBearerTokenResolver delegate = new DefaultBearerTokenResolver();
-		return (HttpServletRequest request) -> PUBLIC.matches(request) ? null : delegate.resolve(request);
+		return (HttpServletRequest request) -> PUBLIC.matches(request) && !EMAIL_CODES.matches(request) ? null : delegate.resolve(request);
 	}
 
 	/** 비밀번호는 BCrypt로만 저장합니다(DB 설계 3절 users.password_hash) */

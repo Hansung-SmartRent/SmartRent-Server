@@ -11,6 +11,18 @@ spring:
     url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
+  mail:
+    # 인증 메일(Gmail SMTP, 외부 연결 1절). 앱 비밀번호는 .env에만
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+      mail.smtp.connectiontimeout: 5000
+      mail.smtp.timeout: 5000
+      mail.smtp.writetimeout: 5000
   jpa:
     open-in-view: false
     hibernate:
@@ -25,6 +37,9 @@ server:
   port: ${SERVER_PORT:8080}
 
 smartrent:
+  mail:
+    # false면 메일을 보내지 않음. local은 서버 로그에 인증번호를 찍고, prod는 MAIL_UNAVAILABLE로 답함
+    enabled: ${MAIL_ENABLED:false}
   jwt:
     # 32자 이상 임의 문자열(HS256). 개발용과 운영용을 다르게 씁니다
     secret: ${JWT_SECRET:}
