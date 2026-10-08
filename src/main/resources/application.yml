@@ -27,6 +27,13 @@ spring:
 server:
   port: ${SERVER_PORT:8080}
 
+smartrent:
+  seed:
+    # local 프로필은 항상 빈 표에 처음 데이터를 넣음. prod는 이 값이 true일 때만 기자재와 관리자 계정을 넣음(B1-03)
+    prod-enabled: ${SEED_PROD_ENABLED:false}
+    admin-email: ${ADMIN_EMAIL:}
+    admin-password: ${ADMIN_PASSWORD:}
+
 ---
 # 개발용(각자 컴퓨터)
 spring:

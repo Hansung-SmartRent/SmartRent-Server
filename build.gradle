@@ -41,6 +41,14 @@ dependencies {
 	testAnnotationProcessor 'org.projectlombok:lombok'
 }
 
+tasks.named('processResources') {
+	// 처음 데이터(fixtures/*.json)를 jar 안 classpath:fixtures/로 함께 넣음(B1-03 로더가 읽음)
+	from('fixtures') {
+		include '*.json'
+		into 'fixtures'
+	}
+}
+
 tasks.named('test') {
 	useJUnitPlatform()
 }

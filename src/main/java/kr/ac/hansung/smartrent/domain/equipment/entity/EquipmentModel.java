@@ -28,6 +28,11 @@ import org.hibernate.type.SqlTypes;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class EquipmentModel extends BaseTimeEntity {
 
+	/** 운영 중인 모델끼리 이름이 겹치는지 볼 때 쓰는 값: 소문자로 바꾸고 공백을 모두 뺌(DB 설계 3절 name_key) */
+	public static String nameKeyOf(String name) {
+		return name.toLowerCase(java.util.Locale.ROOT).replaceAll("\\s+", "");
+	}
+
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
