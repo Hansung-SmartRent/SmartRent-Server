@@ -13,10 +13,10 @@ public record MeResponse(Long id, Role role, String email, String name, String s
 	public record Suspension(boolean suspended, LocalDateTime until, boolean untilReturn) {
 	}
 
-	/** profileImageUrl은 사진 저장(B1-08)이 생기면 임시 주소로 채웁니다 */
-	public static MeResponse of(User user, long activeWarningCount, LocalDateTime now) {
+	/** profileImageUrl은 10분짜리 임시 주소(사진이 없으면 null). 만드는 곳은 MeAssembler */
+	public static MeResponse of(User user, String profileImageUrl, long activeWarningCount, LocalDateTime now) {
 		return new MeResponse(user.getId(), user.getRole(), user.getEmail(), user.getName(), user.getStudentNumber(),
-			user.getApproval(), user.getRejectReason(), null, activeWarningCount,
+			user.getApproval(), user.getRejectReason(), profileImageUrl, activeWarningCount,
 			new Suspension(user.isSuspended(now), user.getSuspendedUntil(), user.isSuspendedUntilReturn()));
 	}
 }

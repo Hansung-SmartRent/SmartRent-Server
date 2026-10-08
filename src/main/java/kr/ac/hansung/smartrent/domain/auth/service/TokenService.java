@@ -16,9 +16,9 @@ import kr.ac.hansung.smartrent.domain.auth.repository.RefreshTokenRepository;
 import kr.ac.hansung.smartrent.domain.user.dto.MeResponse;
 import kr.ac.hansung.smartrent.domain.user.entity.User;
 import kr.ac.hansung.smartrent.domain.user.repository.UserRepository;
+import kr.ac.hansung.smartrent.domain.user.service.MeAssembler;
 import kr.ac.hansung.smartrent.global.exception.BusinessException;
 import kr.ac.hansung.smartrent.global.exception.ErrorCode;
-import kr.ac.hansung.smartrent.global.port.ActiveWarningCounter;
 import kr.ac.hansung.smartrent.global.security.JwtProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
@@ -43,7 +43,7 @@ public class TokenService {
 	private final JwtProperties properties;
 	private final RefreshTokenRepository refreshTokenRepository;
 	private final UserRepository userRepository;
-	private final ActiveWarningCounter warningCounter;
+	private final MeAssembler meAssembler;
 	private final Clock clock;
 
 	@Transactional
@@ -69,7 +69,7 @@ public class TokenService {
 			.expiresAt(LocalDateTime.now(clock).plusDays(properties.refreshDays()))
 			.build());
 
-		MeResponse me = MeResponse.of(user, warningCounter.count(user.getId()), LocalDateTime.now(clock));
+		MeResponse me = meAssembler.toMe(user);
 		return new AuthTokensResponse(access, refresh, accessSeconds, me);
 	}
 

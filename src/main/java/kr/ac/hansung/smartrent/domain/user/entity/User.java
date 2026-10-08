@@ -78,6 +78,11 @@ public class User extends BaseTimeEntity {
 	}
 
 	/** 새 학교 이메일(소문자)로 바꿈 */
+	/** 프로필 사진 키 바꾸기. null이면 지움 */
+	public void changeProfileImage(String key) {
+		this.profileImageKey = key;
+	}
+
 	public void changeEmail(String email) {
 		this.email = email;
 	}

@@ -23,6 +23,11 @@ spring:
       mail.smtp.connectiontimeout: 5000
       mail.smtp.timeout: 5000
       mail.smtp.writetimeout: 5000
+  servlet:
+    multipart:
+      # 사진은 10MB까지(확정). 넘는 파일도 FILE_INVALID로 답하려고 받는 한도는 조금 크게 둠
+      max-file-size: 11MB
+      max-request-size: 12MB
   jpa:
     open-in-view: false
     hibernate:
@@ -45,6 +50,12 @@ smartrent:
     secret: ${JWT_SECRET:}
     access-minutes: ${JWT_ACCESS_MINUTES:30}
     refresh-days: ${JWT_REFRESH_DAYS:14}
+  storage:
+    # local: 레포 밖 폴더(STORAGE_LOCAL_DIR, 비우면 ~/smartrent-uploads), s3: 비공개 S3 버킷(외부 연결 5절)
+    mode: ${STORAGE_MODE:local}
+    local-dir: ${STORAGE_LOCAL_DIR:}
+    s3-bucket: ${S3_BUCKET:}
+    aws-region: ${AWS_REGION:ap-northeast-2}
   seed:
     # local 프로필은 항상 빈 표에 처음 데이터를 넣음. prod는 이 값이 true일 때만 기자재와 관리자 계정을 넣음(B1-03)
     prod-enabled: ${SEED_PROD_ENABLED:false}

@@ -3,6 +3,10 @@
 spring:
   application:
     name: smartrent
+  servlet:
+    multipart:
+      max-file-size: 11MB
+      max-request-size: 12MB
   jpa:
     open-in-view: false
     hibernate:
@@ -19,3 +23,9 @@ smartrent:
     secret: test-only-jwt-secret-not-for-real-use-0123456789
     access-minutes: 30
     refresh-days: 14
+  storage:
+    # 시험은 시험마다 만든 임시 폴더를 씀(StorageTestConfig). 1분 재시도는 시험이 직접 부름
+    mode: local
+    local-dir: build/test-uploads
+    aws-region: ap-northeast-2
+    retry-enabled: false
