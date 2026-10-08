@@ -42,6 +42,9 @@
 - 예약, 수령, 현장 대여, 연장은 모델 행을 `SELECT ... FOR UPDATE`(JPA `@Lock(PESSIMISTIC_WRITE)`)로 잠근 뒤 대수를 다시 셉니다([DB 6절](db/README.md#동시-요청)). 시간 칸을 미리 붙잡아 두지 않습니다.
 - 신고·기기 변경·파손 반납 등 수량 변경과 예약 정리에도 같은 모델 잠금을 적용합니다.
 
+**표 바꾸기**
+- 표·칸은 엔티티만 고쳐서 바꾸지 않습니다. `src/main/resources/db/migration`에 다음 번호 SQL 파일(`V2__설명.sql` …)을 새로 만들고, 엔티티를 그 표에 맞춥니다. 이미 적용된 SQL 파일은 고치지 않습니다([시작하기 6절](시작하기.md#6-db와-서버-실행)).
+
 **오류와 상태 값**
 - 오류 코드는 [API 명세 1-6절](api/README.md#1-6-오류-형식과-상태-코드)의 목록에 있는 것만 씁니다. 새 코드가 필요하면 명세부터 고칩니다.
 - 상태 값은 문서의 대문자 이름 그대로(`RESERVED`, `RENTING`, `RETURNED`, `CANCELLED`, `NO_SHOW`)이고 `@Enumerated(EnumType.STRING)`로 저장합니다.

@@ -8,6 +8,9 @@ spring:
     exclude: org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration
   jpa:
     open-in-view: false
+    hibernate:
+      # 표는 Flyway SQL(db/migration)로 만들고, JPA는 엔티티가 표와 맞는지만 검사합니다(개발·시험·운영 같음)
+      ddl-auto: validate
     properties:
       hibernate:
         jdbc:
