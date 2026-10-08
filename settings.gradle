@@ -1,0 +1,6 @@
+plugins {
+	// 컴퓨터에 JDK 21이 없으면 Gradle이 받아서 씁니다(맥·윈도우 같은 버전)
+	id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
+}
+
+rootProject.name = 'smartrent'
