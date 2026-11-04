@@ -1,0 +1,47 @@
+CREATE TABLE rental_applications (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    model_id BIGINT NOT NULL,
+    source VARCHAR(20) NOT NULL,
+    created_at DATETIME NOT NULL,
+    PRIMARY KEY (id),
+    KEY idx_rental_applications_model (model_id),
+    CONSTRAINT fk_rental_applications_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+    CONSTRAINT fk_rental_applications_model FOREIGN KEY (model_id) REFERENCES equipment_models (id)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+
+CREATE TABLE rentals (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    application_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    model_id BIGINT NOT NULL,
+    unit_id BIGINT NULL,
+    status VARCHAR(12) NOT NULL,
+    start_at DATETIME NOT NULL,
+    end_at DATETIME NOT NULL,
+    picked_at DATETIME NULL,
+    returned_at DATETIME NULL,
+    return_condition VARCHAR(10) NULL,
+    extended BOOLEAN NOT NULL DEFAULT FALSE,
+    broken_reported BOOLEAN NOT NULL DEFAULT FALSE,
+    broken_note VARCHAR(500) NULL,
+    damage_discovered_at DATETIME NULL,
+    damage_note VARCHAR(500) NULL,
+    return_required BOOLEAN NOT NULL DEFAULT FALSE,
+    professor_mail_checked BOOLEAN NOT NULL DEFAULT FALSE,
+    cancel_reason VARCHAR(100) NULL,
+    due_notified BOOLEAN NOT NULL DEFAULT FALSE,
+    late_warned BOOLEAN NOT NULL DEFAULT FALSE,
+    version BIGINT NOT NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    PRIMARY KEY (id),
+    KEY idx_rentals_model (model_id),
+    CONSTRAINT fk_rentals_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+    CONSTRAINT fk_rentals_model FOREIGN KEY (model_id) REFERENCES equipment_models (id),
+    KEY idx_rentals_model_status (model_id, status),
+    KEY idx_rentals_application (application_id),
+    CONSTRAINT fk_rentals_application FOREIGN KEY (application_id) REFERENCES rental_applications (id) ON DELETE CASCADE,
+    CONSTRAINT fk_rentals_unit FOREIGN KEY (unit_id) REFERENCES equipment_units (id)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+
