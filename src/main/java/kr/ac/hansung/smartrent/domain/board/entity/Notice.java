@@ -34,4 +34,10 @@ public class Notice extends BaseTimeEntity {
 
 	@Column(name = "author_id", nullable = false)
 	private Long authorId;
+
+	/** 제목·내용 고치기(관리자) */
+	public void edit(String title, String body) {
+		this.title = title;
+		this.body = body;
+	}
 }
