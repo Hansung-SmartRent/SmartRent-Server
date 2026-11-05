@@ -1,7 +1,7 @@
 package kr.ac.hansung.smartrent.domain.notification.config;
 import java.io.IOException;
 import java.nio.file.*;
-import com.google.auth.oauth2.GoogleCredentials;
+import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.firebase.*;
 import com.google.firebase.messaging.*;
 import kr.ac.hansung.smartrent.domain.notification.service.PushSender;
@@ -16,7 +16,8 @@ public class FcmConfig {
   if (credentialsPath.isBlank()) throw new IllegalStateException("FCM_CREDENTIALS_PATH가 필요합니다.");
   FirebaseApp app;
   try (var in=Files.newInputStream(Path.of(credentialsPath))) {
-   app=FirebaseApp.initializeApp(FirebaseOptions.builder().setCredentials(GoogleCredentials.fromStream(in)).build(),
+   app=FirebaseApp.initializeApp(FirebaseOptions.builder().setCredentials(ServiceAccountCredentials.fromStream(in))
+    .setConnectTimeout(5000).setReadTimeout(5000).build(),
     "smartrent-"+java.util.UUID.randomUUID());
   }
   return new FirebasePushSender(app);

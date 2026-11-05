@@ -11,9 +11,15 @@ public class NotificationPushListener {
  private final PushSender sender;
  private final PushTokenRepository tokens;
  private final NotificationSettingsRepository settings;
+ private final kr.ac.hansung.smartrent.domain.warning.repository.WarningRepository warnings;
  @TransactionalEventListener(phase=TransactionPhase.AFTER_COMMIT)
  @Transactional(propagation=Propagation.REQUIRES_NEW)
  public void created(NotificationService.NotificationCreated event) {
+  var kind=event.notification().kind();
+  boolean required=kind==NotificationKind.DUE || kind==NotificationKind.RETURN_REQUIRED || kind==NotificationKind.CANCEL;
+  boolean noShow=kind==NotificationKind.WARNING && event.notification().relatedType()==kr.ac.hansung.smartrent.domain.notification.entity.RelatedType.WARNING
+   && warnings.findById(event.notification().relatedId()).map(w->w.getKind()==kr.ac.hansung.smartrent.domain.warning.entity.WarningKind.NO_SHOW && w.getRevokedAt()==null).orElse(false);
+  if(!required && !noShow) return;
   if(event.notification().kind()==NotificationKind.DUE &&
    !settings.findById(event.userId()).map(s->s.isDueEnabled()).orElse(true)) return;
   for(var token:tokens.findByUserId(event.userId())) {
