@@ -19,10 +19,11 @@ class WalkInApiTest extends RentalSupport {
    .andExpect(jsonPath("$.errorCode").value(code));
  }
  @Test void B2_07_01_WALK_01_candidates_and_weekend() {
-  var m=model("17");
-  assertThat(walk.options("2499001",m.getId()).endOptions()).allSatisfy(end->assertThat(end).isAfter(time("10:05")));
+  var m=model("28"); record(m,other(),RentalStatus.RESERVED,"14:00","15:00");
+  assertThat(walk.options("2499001",m.getId()).endOptions()).containsExactly(time("11:00"),time("12:00"),time("13:00"));
   at("2026-10-10T10:05:00+09:00");
   assertThat(walk.options("2499001",m.getId()).endOptions()).isEmpty();
+  assertThat(walk.options("2499001",m.getId()).blockReason()).isEqualTo("주말");
  }
  @Test void B2_07_02_invalid_end() throws Exception { error("17","2026-10-07T10:20:00","WALK_IN_END_INVALID"); }
  @Test void B2_07_03_same_kind_active() throws Exception {

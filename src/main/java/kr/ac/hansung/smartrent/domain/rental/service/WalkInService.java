@@ -31,6 +31,7 @@ public class WalkInService {
  private final RentalPickupService pickup;
  private final ReservationService reservations;
  private final RentalEndOptions ends;
+ private final RentalCalendarReader calendars;
  private final StudentAccessGuard guard;
  private final WarningService warnings;
  private final NotificationService notifications;
@@ -44,10 +45,12 @@ public class WalkInService {
   if(model==null) throw new BusinessException(ErrorCode.NOT_FOUND);
   var now=LocalDateTime.now(clock);
   var info=AdminStudentResponse.of(student,warnings.count(student.getId()),now);
+  var calendar=calendars.read(model);
+  if(calendar.isClosed(now.toLocalDate())) return new Options(info,false,calendar.closedReason(now.toLocalDate()),List.of(),List.of());
   try {
    guard.check(student); if(model.isArchived()) throw new BusinessException(ErrorCode.MODEL_ARCHIVED);
    pickup.ensureOperating(model,now); reservations.checkStudent(student.getId(),model);
-  } catch(BusinessException ex) { return new Options(info,false,ex.getErrorCode().name(),List.of(),List.of()); }
+  } catch(BusinessException ex) { return new Options(info,false,ex.getMessage(),List.of(),List.of()); }
   var free=units.findAllByModelIdAndDeletedAtIsNullOrderByIdAsc(modelId).stream()
    .filter(u->u.getCondition()==UnitCondition.NORMAL)
    .filter(u->em.createQuery("select count(r) from Rental r where r.unitId=:id and r.status=:status",Long.class)
@@ -55,12 +58,12 @@ public class WalkInService {
    .map(u->new RentalResponse.UnitBrief(u.getId(),u.getCode(),u.getName())).toList();
   var options=ends.options(model,now,now,null);
   boolean eligible=!free.isEmpty() && !options.isEmpty();
-  return new Options(info,eligible,eligible?null:ErrorCode.NO_CAPACITY.name(),free,options);
+  return new Options(info,eligible,eligible?null:ErrorCode.NO_CAPACITY.getMessage(),free,options);
  }
  public RentalResponse walkIn(String number,Long modelId,String unitCode,LocalDateTime end,boolean checked,Long actor) {
   var student=users.findByStudentNumber(number).orElseThrow(()->new BusinessException(ErrorCode.NOT_FOUND));
-  em.lock(student,LockModeType.PESSIMISTIC_WRITE);
   var model=locks.lockById(modelId).orElseThrow(()->new BusinessException(ErrorCode.NOT_FOUND));
+  em.refresh(student,LockModeType.PESSIMISTIC_WRITE);
   guard.check(student); if(model.isArchived()) throw new BusinessException(ErrorCode.MODEL_ARCHIVED);
   var now=LocalDateTime.now(clock); pickup.ensureOperating(model,now); reservations.checkStudent(student.getId(),model);
   if(model.getRentalType()==RentalType.LONG_TERM && !checked) throw new BusinessException(ErrorCode.PROFESSOR_MAIL_REQUIRED);

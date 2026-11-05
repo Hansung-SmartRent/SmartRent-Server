@@ -19,10 +19,10 @@ class RentalPickupApiTest extends RentalSupport {
   else result.andExpect(jsonPath("$.errorCode").value(error));
  }
  @Test void B2_06_01_PICK_01_operating_and_early_pickup() throws Exception {
-  var m=model("17"); var r=record(m,student(),RentalStatus.RESERVED,"10:00","12:00");
+  var m=model("48"); var r=record(m,student(),RentalStatus.RESERVED,"10:00","12:00");
   at("2026-10-07T08:30:00+09:00"); pickup(r,unit(m).getCode(),false,"OUTSIDE_OPERATING_HOURS");
-  at("2026-10-07T09:35:00+09:00"); pickup(r,unit(m).getCode(),false,null);
-  assertThat(r.getEndAt()).isEqualTo(time("12:00")); assertThat(r.getPickedAt()).isEqualTo(time("09:35"));
+  at("2026-10-07T09:05:00+09:00"); pickup(r,"278",false,null);
+  assertThat(r.getEndAt()).isEqualTo(time("12:00")); assertThat(r.getPickedAt()).isEqualTo(time("09:05"));
  }
  @Test void B2_06_02_PICK_02_professor_required() throws Exception {
   var m=model("30"); var r=record(m,student(),RentalStatus.RESERVED,"09:00","17:00"); r.changeDeadline(time("17:00").plusMonths(6));

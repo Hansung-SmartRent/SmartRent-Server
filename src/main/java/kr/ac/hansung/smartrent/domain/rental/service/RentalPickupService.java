@@ -34,7 +34,7 @@ public class RentalPickupService {
  public RentalResponse pickup(Long id,String code,boolean checked,Long actor) {
   var r=reader.require(id);
   var model=locks.lockById(r.getModelId()).orElseThrow(()->new BusinessException(ErrorCode.NOT_FOUND));
-  em.refresh(r);
+  em.flush(); em.refresh(r);
   boolean reserved=r.getStatus()==RentalStatus.RESERVED;
   judgments.processModel(model.getId());
   if(reserved && r.getStatus()==RentalStatus.NO_SHOW) throw new JudgmentRefusal(ErrorCode.NO_SHOW_DEADLINE_PASSED);

@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 public class RentalPickupController {
  private final RentalPickupService service;
  @PostMapping("/{id}/pickup") public ApiResponse<?> pickup(@PathVariable Long id,@Valid @RequestBody Request request) {
-  return ApiResponse.ok(service.pickup(id,request.unitCode(),request.professorMailChecked(),CurrentUser.id()));
+  return ApiResponse.ok(service.pickup(id,request.unitCode(),Boolean.TRUE.equals(request.professorMailChecked()),CurrentUser.id()));
  }
- public record Request(@NotBlank String unitCode,boolean professorMailChecked) { }
+ public record Request(@NotBlank String unitCode,Boolean professorMailChecked) { }
 }

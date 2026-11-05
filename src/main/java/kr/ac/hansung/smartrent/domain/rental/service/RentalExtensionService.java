@@ -23,6 +23,7 @@ public class RentalExtensionService {
  @Transactional(readOnly=true)
  public Options options(Long id,Long user) {
   var r=reader.owned(id,user,false); var model=em.find(EquipmentModel.class,r.getModelId());
+  try { guard.check(user); } catch(BusinessException ex) { return new Options(false,ex.getErrorCode().name(),null,List.of()); }
   var error=blocked(r,model);
   if(error!=null) return new Options(false,error.name(),null,List.of());
   var options=ends.options(model,r.getStartAt(),r.getEndAt(),id);
