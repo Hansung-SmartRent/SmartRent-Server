@@ -78,4 +78,17 @@ class ReservationApiTest extends RentalSupport {
   record(model("5"),other(),RentalStatus.RESERVED,"14:00","15:00");
   success(request("5",segment("2026-10-07T13:00:00","2026-10-07T14:00:00")));
  }
+ @Test void B2_03_02_RSV_02_peak_not_sum() throws Exception {
+  var m=model("29");
+  em.createQuery("update EquipmentModel m set m.maxRentalMinutes=null where m.id=:id").setParameter("id",m.getId()).executeUpdate();
+  em.refresh(m);
+  record(m,other(),RentalStatus.RESERVED,"10:00","12:00");
+  var later=record(m,other(),RentalStatus.RESERVED,"12:00","14:00");
+  success(request("29",segment("2026-10-07T10:00:00","2026-10-07T14:00:00")));
+ }
+ @Test void B2_03_02_RSV_03_carry_out_buffer() throws Exception {
+  record(model("28"),other(),RentalStatus.RESERVED,"14:00","16:00");
+  error(request("28",segment("2026-10-07T13:00:00","2026-10-07T14:00:00")),"NO_CAPACITY");
+  success(request("28",segment("2026-10-07T12:00:00","2026-10-07T13:00:00")));
+ }
 }

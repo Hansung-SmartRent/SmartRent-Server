@@ -32,10 +32,10 @@ public class ReservationService {
  public record Result(Long applicationId,List<RentalResponse> rentals) { }
  public Result reserve(Long userId,Request request) {
   if(request.modelId()==null) fail(ErrorCode.VALIDATION_ERROR);
+  var model=locks.lockById(request.modelId()).orElseThrow(()->new BusinessException(ErrorCode.NOT_FOUND));
   var user=em.find(User.class,userId,LockModeType.PESSIMISTIC_WRITE);
   if(user==null) fail(ErrorCode.UNAUTHORIZED);
   guard.check(user);
-  var model=locks.lockById(request.modelId()).orElseThrow(()->new BusinessException(ErrorCode.NOT_FOUND));
   if(model.isArchived()) fail(ErrorCode.MODEL_ARCHIVED);
   checkStudent(userId,model);
   var calendar=calendars.read(model);

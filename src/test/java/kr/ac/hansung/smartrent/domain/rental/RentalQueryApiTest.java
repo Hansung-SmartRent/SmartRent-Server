@@ -15,6 +15,7 @@ class RentalQueryApiTest extends RentalSupport {
   var r=record(model("17"),student(),RentalStatus.RESERVED,"10:00","11:00");
   mvc.perform(get("/api/v1/rentals/"+r.getId()).header("Authorization",token(other(),"STUDENT"))).andExpect(status().isForbidden());
   mvc.perform(get("/api/v1/rentals/"+r.getId()).header("Authorization",adminToken())).andExpect(status().isOk());
+  mvc.perform(get("/api/v1/rentals/me").header("Authorization",adminToken())).andExpect(status().isForbidden());
  }
  @Test void B2_04_03_application_group_order() throws Exception {
   clearRentals();

@@ -22,6 +22,15 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+ @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+ public ResponseEntity<ApiResponse<Void>> handleAccessDenied(Exception e) {
+  return ResponseEntity.status(ErrorCode.FORBIDDEN.getStatus()).body(ApiResponse.fail(ErrorCode.FORBIDDEN));
+ }
+ @ExceptionHandler({org.springframework.orm.ObjectOptimisticLockingFailureException.class,
+  org.springframework.dao.PessimisticLockingFailureException.class,jakarta.persistence.OptimisticLockException.class})
+ public ResponseEntity<ApiResponse<Void>> handleConcurrentUpdate(Exception e) {
+  return ResponseEntity.status(ErrorCode.CONFLICT_RETRY.getStatus()).body(ApiResponse.fail(ErrorCode.CONFLICT_RETRY));
+ }
 
 	@ExceptionHandler(BusinessException.class)
 	public ResponseEntity<ApiResponse<Void>> handleBusiness(BusinessException e) {
