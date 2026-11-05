@@ -27,6 +27,9 @@ import org.hibernate.type.SqlTypes;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class User extends BaseTimeEntity {
+ public void changeSuspension(LocalDateTime until,boolean untilReturn,boolean startedByReturn) {
+  suspendedUntil=until; suspendedUntilReturn=untilReturn; suspensionStartedByReturn=startedByReturn;
+ }
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -1,0 +1,1 @@
+ALTER TABLE warnings ADD COLUMN revoked_by_correction BOOLEAN NOT NULL DEFAULT FALSE;

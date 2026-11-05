@@ -289,6 +289,7 @@ erDiagram
 | created_at | DATETIME | 필수 | |
 | revoked_at | DATETIME | 선택 | 관리자 취소 시각 |
 | revoke_reason | VARCHAR(100) | 선택 | |
+| revoked_by_correction | BOOLEAN | 필수 | 시각 정정으로 자동 취소했는지. 관리자 수동 취소는 false이며, 반납 시각 재정정 때 자동 취소한 연체 경고만 복원하는 내부 표시 |
 | expires_at | DATETIME | 선택 | 정지가 끝나 경고가 0회로 돌아간 시각 |
 
 - **유효한 경고** = `revoked_at`이 비어 있고, `expires_at`이 비어 있거나 지금보다 뒤인 경고.

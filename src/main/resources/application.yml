@@ -42,6 +42,9 @@ server:
   port: ${SERVER_PORT:8080}
 
 smartrent:
+  fcm:
+    enabled: ${FCM_ENABLED:false}
+    credentials-path: ${FCM_CREDENTIALS_PATH:}
   mail:
     # false면 메일을 보내지 않음. local은 서버 로그에 인증번호를 찍고, prod는 MAIL_UNAVAILABLE로 답함
     enabled: ${MAIL_ENABLED:false}

@@ -54,6 +54,7 @@ import tools.jackson.databind.json.JsonMapper;
 @Service
 @RequiredArgsConstructor
 public class SeedService {
+ private final kr.ac.hansung.smartrent.domain.warning.repository.WarningRepository warningRepository;
 
 	private final EquipmentModelRepository modelRepository;
 	private final EquipmentUnitRepository unitRepository;
@@ -68,6 +69,7 @@ public class SeedService {
 	/** local 프로필: 기자재·가짜 계정·공휴일 */
 	@Transactional
 	public void loadLocal() {
+  boolean loadWarnings=warningRepository.count()==0;
 		loadModels(read("equipment.json", SeedFixtures.Equipment.class).models());
 		if (userRepository.count() == 0) {
 			read("users.json", SeedFixtures.Users.class).users().forEach(this::saveUser);
@@ -80,6 +82,15 @@ public class SeedService {
 		if (rentalRepository.count() == 0) {
 			loadRentals(read("rentals.json", SeedFixtures.Rentals.class).rentals());
 		}
+  if(loadWarnings) {
+   for(var fixture:read("users.json",SeedFixtures.Users.class).users()) {
+    if(fixture.warnings()==null) continue;
+    userRepository.findByEmail(fixture.email()).ifPresent(user->fixture.warnings().forEach(kind->
+     warningRepository.save(kr.ac.hansung.smartrent.domain.warning.entity.Warning.builder()
+      .userId(user.getId()).kind(kr.ac.hansung.smartrent.domain.warning.entity.WarningKind.valueOf(kind))
+      .createdAt(LocalDateTime.now(clock)).build())));
+   }
+  }
 	}
 
 	/** 상태별 대여 예시(local만). 학생은 users.json의 key, 모델은 key, 기기는 code로 찾습니다 */
@@ -105,7 +116,7 @@ public class SeedService {
 			boolean picked = status == RentalStatus.RENTING || status == RentalStatus.RETURNED;
 			RentalApplication application = applicationRepository.save(RentalApplication.builder()
 				.userId(student.getId()).modelId(model.getId()).source(ApplicationSource.RESERVATION).build());
-			rentalRepository.save(Rental.builder()
+			var savedRental=rentalRepository.save(Rental.builder()
 				.applicationId(application.getId())
 				.userId(student.getId())
 				.modelId(model.getId())
@@ -120,6 +131,11 @@ public class SeedService {
 				.brokenNote(r.brokenNote())
 				.cancelReason(r.cancelReason())
 				.build());
+   if(status==RentalStatus.NO_SHOW) {
+    warningRepository.save(kr.ac.hansung.smartrent.domain.warning.entity.Warning.builder()
+     .userId(student.getId()).rentalId(savedRental.getId()).kind(kr.ac.hansung.smartrent.domain.warning.entity.WarningKind.NO_SHOW)
+     .createdAt(start.plusMinutes(10)).build());
+   }
 			if (broken && unit != null) {
 				unit.changeCondition(UnitCondition.INSPECTION); // 신고한 기기는 반납 확인 전까지 내주지 않음(DB 설계 4절)
 			}

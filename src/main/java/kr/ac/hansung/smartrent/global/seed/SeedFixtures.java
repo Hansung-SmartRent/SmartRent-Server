@@ -32,7 +32,7 @@ final class SeedFixtures {
 	/** suspendedUntilMonthsFromLoad: 넣는 시각 + N개월까지 정지. 경고(warnings)는 B2-12 표라 여기서 넣지 않음 */
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	record User(String key, String role, String email, String password, String name, String studentNumber,
-		String approval, String rejectReason, Integer suspendedUntilMonthsFromLoad) {
+		String approval, String rejectReason, Integer suspendedUntilMonthsFromLoad, List<String> warnings) {
 	}
 
 	@JsonIgnoreProperties(ignoreUnknown = true)
