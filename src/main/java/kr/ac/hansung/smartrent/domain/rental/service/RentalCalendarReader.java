@@ -21,6 +21,11 @@ public class RentalCalendarReader {
 		var holidays = em.createQuery("select h from Holiday h", kr.ac.hansung.smartrent.domain.operation.entity.Holiday.class)
 			.getResultList();
 		return new RentalCalendar() {
+			public String closedReason(LocalDate date) {
+				if (date.getDayOfWeek() == DayOfWeek.SATURDAY || date.getDayOfWeek() == DayOfWeek.SUNDAY) return "주말";
+				return holidays.stream().filter(h -> h.getDate().equals(date) && !h.isOpenOverride())
+					.map(h -> h.getName()).findFirst().orElse(null);
+			}
 			public boolean isClosed(LocalDate date) {
 				return date.getDayOfWeek() == DayOfWeek.SATURDAY || date.getDayOfWeek() == DayOfWeek.SUNDAY
 					|| holidays.stream().anyMatch(h -> h.getDate().equals(date) && !h.isOpenOverride());
