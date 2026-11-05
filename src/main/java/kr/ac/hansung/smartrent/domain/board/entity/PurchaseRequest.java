@@ -22,7 +22,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public class PurchaseRequest extends BaseCreatedEntity {
+public class PurchaseRequest extends BaseCreatedEntity implements BoardRequest {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -42,4 +42,10 @@ public class PurchaseRequest extends BaseCreatedEntity {
 
 	@Column(name = "responded_at", nullable = true)
 	private LocalDateTime respondedAt;
+
+	@Override
+	public void answer(String response, LocalDateTime respondedAt) {
+		this.response = response;
+		this.respondedAt = respondedAt;
+	}
 }

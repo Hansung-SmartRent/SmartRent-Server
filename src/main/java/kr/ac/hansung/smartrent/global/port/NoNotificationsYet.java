@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 /** B2-13(알림 표) 전까지 쓰는 기본 구현. 로그에만 남김. B2-13에서 지웁니다 */
 @Slf4j
 @Component
-public class NoNotificationsYet implements OperationsAlert, AccountAlert, NoticeAlert {
+public class NoNotificationsYet implements OperationsAlert, AccountAlert, NoticeAlert, BoardAlert {
 
 	@Override
 	public void send(String title, String body) {
@@ -26,5 +26,15 @@ public class NoNotificationsYet implements OperationsAlert, AccountAlert, Notice
 	@Override
 	public void toStudents(Long noticeId, String title, String body) {
 		log.info("[학생 전체 알림 NOTICE] 공지 {}: {}", noticeId, title);
+	}
+
+	@Override
+	public void newRequest(String relatedType, Long relatedId, String title) {
+		log.info("[관리자 알림 REQUEST] {} {}: {}", relatedType, relatedId, title);
+	}
+
+	@Override
+	public void answered(Long userId, String relatedType, Long relatedId, String title) {
+		log.info("[학생 알림 RESPONSE] 학생 id {}, {} {}: {}", userId, relatedType, relatedId, title);
 	}
 }
