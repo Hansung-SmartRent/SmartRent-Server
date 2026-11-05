@@ -54,6 +54,7 @@ import tools.jackson.databind.json.JsonMapper;
 @Service
 @RequiredArgsConstructor
 public class SeedService {
+ private final kr.ac.hansung.smartrent.domain.warning.repository.WarningRepository warningRepository;
 
 	private final EquipmentModelRepository modelRepository;
 	private final EquipmentUnitRepository unitRepository;
@@ -80,6 +81,15 @@ public class SeedService {
 		if (rentalRepository.count() == 0) {
 			loadRentals(read("rentals.json", SeedFixtures.Rentals.class).rentals());
 		}
+  if(warningRepository.count()==0) {
+   for(var fixture:read("users.json",SeedFixtures.Users.class).users()) {
+    if(fixture.warnings()==null) continue;
+    userRepository.findByEmail(fixture.email()).ifPresent(user->fixture.warnings().forEach(kind->
+     warningRepository.save(kr.ac.hansung.smartrent.domain.warning.entity.Warning.builder()
+      .userId(user.getId()).kind(kr.ac.hansung.smartrent.domain.warning.entity.WarningKind.valueOf(kind))
+      .createdAt(LocalDateTime.now(clock)).build())));
+   }
+  }
 	}
 
 	/** 상태별 대여 예시(local만). 학생은 users.json의 key, 모델은 key, 기기는 code로 찾습니다 */

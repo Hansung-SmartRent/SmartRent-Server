@@ -1,17 +1,7 @@
 package kr.ac.hansung.smartrent.global.port;
-
 import org.springframework.stereotype.Component;
-
-/** B2-12(경고 표) 전까지 쓰는 기본 구현. B2-12에서 지웁니다 */
+/** B2-17 보관 경고 복원 연결 전 기본 구현. */
 @Component
-public class NoWarningsYet implements ActiveWarningCounter, RetainedWarningRestorer {
-
-	@Override
-	public long count(Long userId) {
-		return 0;
-	}
-
-	@Override
-	public void restore(Long userId, String studentNumber) {
-	}
+public class NoWarningsYet implements RetainedWarningRestorer {
+ public void restore(Long userId,String studentNumber) { }
 }
