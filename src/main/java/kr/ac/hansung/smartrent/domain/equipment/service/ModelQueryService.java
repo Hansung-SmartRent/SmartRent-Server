@@ -57,6 +57,13 @@ public class ModelQueryService {
 		return ModelSummaryResponse.of(m, thumbnail(m), normalUnits(m), availableNow(m, calendarReader.read(m)));
 	}
 
+	/** 사진 인식 결과(모델명)로 모델 하나 찾기(B1-12). 대소문자·공백 무시, 운영 종료 모델 제외, 없으면 404 */
+	public ModelSummaryResponse recognize(String modelName) {
+		return modelRepository.findByNameKeyAndArchivedFalse(EquipmentModel.nameKeyOf(modelName.trim()))
+			.map(this::summary)
+			.orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+	}
+
 	/** 운영 종료 모델은 학생에게 보이지 않으므로 없는 것과 같이 404 */
 	public ModelDetailResponse detail(Long id) {
 		EquipmentModel model = modelRepository.findById(id).filter(m -> !m.isArchived())
