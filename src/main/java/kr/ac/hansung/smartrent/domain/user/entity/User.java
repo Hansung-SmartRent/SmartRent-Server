@@ -96,6 +96,12 @@ public class User extends BaseTimeEntity {
 		this.rejectReason = null;
 	}
 
+	/** 관리자의 이름·학번 정정(B1-16, 기획안 11장). 학생 본인은 바꾸지 못함 */
+	public void correctNameAndNumber(String name, String studentNumber) {
+		this.name = name;
+		this.studentNumber = studentNumber;
+	}
+
 	/** 정지 중인지(DB 설계 3절): 반납 전이라 6개월이 아직 시작 안 됐거나, 정지 종료 시각이 지금보다 뒤 */
 	public boolean isSuspended(java.time.LocalDateTime now) {
 		return suspendedUntilReturn || (suspendedUntil != null && suspendedUntil.isAfter(now));

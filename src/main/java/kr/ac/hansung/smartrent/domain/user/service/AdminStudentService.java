@@ -13,6 +13,7 @@ import kr.ac.hansung.smartrent.domain.user.entity.Approval;
 import kr.ac.hansung.smartrent.domain.user.entity.Role;
 import kr.ac.hansung.smartrent.domain.user.entity.User;
 import kr.ac.hansung.smartrent.domain.user.repository.UserRepository;
+import kr.ac.hansung.smartrent.global.audit.AuditLogService;
 import kr.ac.hansung.smartrent.global.exception.BusinessException;
 import kr.ac.hansung.smartrent.global.exception.ErrorCode;
 import kr.ac.hansung.smartrent.global.port.ActiveWarningCounter;
@@ -35,6 +36,7 @@ public class AdminStudentService {
 	private final ActiveWarningCounter warningCounter;
 	private final StudentHistoryReader historyReader;
 	private final StorageService storageService;
+	private final AuditLogService auditLogService;
 	private final Clock clock;
 
 	public PageResponse<AdminStudentResponse> list(Approval approval, String q, Boolean hasWarnings, Boolean suspended,
@@ -56,12 +58,35 @@ public class AdminStudentService {
 
 	/** 학생증 사진 주소는 승인 대기 중일 때만(승인·반려하면 사진을 지움, 기획안 1장) */
 	public AdminStudentDetailResponse detail(Long id) {
-		User user = userRepository.findById(id).filter(u -> u.getRole() == Role.STUDENT)
-			.orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+		User user = loadStudent(id);
 		AdminStudentResponse summary = AdminStudentResponse.of(user, warningCounter.count(id), LocalDateTime.now(clock));
 		String url = user.getApproval() == Approval.PENDING && user.getStudentIdImageKey() != null
 			? storageService.temporaryUrl(user.getStudentIdImageKey()) : null;
 		return AdminStudentDetailResponse.of(summary, url, historyReader.warnings(id), historyReader.rentals(id));
+	}
+
+	/** 관리 기록의 action(API 명세 3절 학생 묶음) */
+	public static final String STUDENT_EDIT = "STUDENT_EDIT";
+
+	/** 이름·학번 정정(B1-16). 다른 계정이 쓰는 학번은 거절, 관리 기록에 바꾸기 전·후 값을 남김 */
+	@Transactional
+	public AdminStudentResponse correct(Long id, String name, String studentNumber, Long adminId) {
+		User user = loadStudent(id);
+		String newName = name.trim();
+		String newNumber = studentNumber.trim();
+		userRepository.findByStudentNumber(newNumber).filter(other -> !other.getId().equals(id)).ifPresent(other -> {
+			throw new BusinessException(ErrorCode.STUDENT_NUMBER_DUPLICATE);
+		});
+		String detail = "학생 정보 정정(학생 id " + id + "): 이름 " + user.getName() + " → " + newName + ", 학번 "
+			+ user.getStudentNumber() + " → " + newNumber;
+		user.correctNameAndNumber(newName, newNumber);
+		auditLogService.record(STUDENT_EDIT, detail, adminId);
+		return AdminStudentResponse.of(userRepository.saveAndFlush(user), warningCounter.count(id), LocalDateTime.now(clock));
+	}
+
+	private User loadStudent(Long id) {
+		return userRepository.findById(id).filter(u -> u.getRole() == Role.STUDENT)
+			.orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
 	}
 
 	private static boolean contains(String field, String needle) {
