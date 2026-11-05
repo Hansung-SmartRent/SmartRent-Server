@@ -48,8 +48,13 @@ public class ModelQueryService {
 			.filter(m -> category == null || category.isBlank() || m.getCategory().equals(category.trim()))
 			.filter(m -> rentalType == null || m.getRentalType() == rentalType)
 			.filter(m -> needle == null || matches(m, needle))
-			.map(m -> ModelSummaryResponse.of(m, thumbnail(m), normalUnits(m), availableNow(m, calendarReader.read(m))))
+			.map(this::summary)
 			.toList();
+	}
+
+	/** 목록 한 줄(기기 코드 찾기·사진 인식 결과에도 씀) */
+	public ModelSummaryResponse summary(EquipmentModel m) {
+		return ModelSummaryResponse.of(m, thumbnail(m), normalUnits(m), availableNow(m, calendarReader.read(m)));
 	}
 
 	/** 운영 종료 모델은 학생에게 보이지 않으므로 없는 것과 같이 404 */
