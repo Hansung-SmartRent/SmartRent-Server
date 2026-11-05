@@ -6,12 +6,16 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import kr.ac.hansung.smartrent.domain.equipment.dto.ModelDetailResponse;
 import kr.ac.hansung.smartrent.domain.equipment.dto.ModelSummaryResponse;
+import kr.ac.hansung.smartrent.domain.equipment.dto.RecognitionRequest;
 import kr.ac.hansung.smartrent.domain.equipment.entity.RentalType;
 import kr.ac.hansung.smartrent.domain.equipment.service.ModelQueryService;
 import kr.ac.hansung.smartrent.global.response.ApiResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -36,5 +40,11 @@ public class ModelController {
 	@GetMapping("/{id}")
 	public ApiResponse<ModelDetailResponse> detail(@PathVariable Long id) {
 		return ApiResponse.ok(modelQueryService.detail(id));
+	}
+
+	@Operation(summary = "사진 인식 결과(모델명)로 모델 찾기")
+	@PostMapping("/recognition")
+	public ApiResponse<ModelSummaryResponse> recognize(@Valid @RequestBody RecognitionRequest request) {
+		return ApiResponse.ok(modelQueryService.recognize(request.modelName()));
 	}
 }
