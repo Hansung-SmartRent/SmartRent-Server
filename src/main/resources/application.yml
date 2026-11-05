@@ -56,6 +56,15 @@ smartrent:
     local-dir: ${STORAGE_LOCAL_DIR:}
     s3-bucket: ${S3_BUCKET:}
     aws-region: ${AWS_REGION:ap-northeast-2}
+  ai:
+    # AI 추천(Gemini API, 외부 연결 3절). false면 모델 이름에 사용 목적의 단어가 들어간 모델을 고르는 대체 추천
+    enabled: ${AI_ENABLED:false}
+    api-key: ${GEMINI_API_KEY:}
+    model-id: ${AI_MODEL_ID:}
+    # 설정한 모델 ID를 실제 호출로 확인했으면 true(응답의 modelIdVerified)
+    model-verified: ${AI_MODEL_VERIFIED:false}
+    base-url: https://generativelanguage.googleapis.com
+    timeout: 20s
   seed:
     # local 프로필은 항상 빈 표에 처음 데이터를 넣음. prod는 이 값이 true일 때만 기자재와 관리자 계정을 넣음(B1-03)
     prod-enabled: ${SEED_PROD_ENABLED:false}
