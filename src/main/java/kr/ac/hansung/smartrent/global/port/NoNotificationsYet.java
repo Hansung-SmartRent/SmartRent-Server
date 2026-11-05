@@ -17,4 +17,9 @@ public class NoNotificationsYet implements OperationsAlert, AccountAlert {
 	public void toAdmins(String title, String body, Long relatedUserId) {
 		log.info("[관리자 알림 ACCOUNT] {}: {} (학생 id {})", title, body, relatedUserId);
 	}
+
+	@Override
+	public void toStudent(Long userId, String title, String body) {
+		log.info("[학생 알림 ACCOUNT] 학생 id {}: {}", userId, title);
+	}
 }

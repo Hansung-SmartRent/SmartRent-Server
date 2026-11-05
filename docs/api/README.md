@@ -413,7 +413,7 @@
 | 반납 | RETURN, RETURN_CORRECTION, DAMAGE_DISCOVERY |
 | 기기 | UNIT_CONDITION, UNIT_EDIT, MODEL_ADD, MODEL_EDIT, MODEL_ARCHIVE, CAPACITY |
 | 운영 | OPERATIONS |
-| 학생 | WARNING_REVOKE, WITHDRAW, STUDENT_EDIT |
+| 학생 | WARNING_REVOKE, WITHDRAW, STUDENT_EDIT, APPROVE_STUDENT, REJECT_STUDENT |
 
 - 알림은 relatedType과 relatedId로 대상 종류와 번호를 함께 반환합니다. 문의·구매 요청 답변은 RESPONSE이며 INQUIRY/PURCHASE_REQUEST로 구분합니다. 연결 대상이 없으면 둘 다 null입니다. 알림 클릭 후 조회에서도 권한을 검사하고 삭제된 대상은 열지 않습니다.
 
