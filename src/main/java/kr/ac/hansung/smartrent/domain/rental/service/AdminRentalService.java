@@ -20,6 +20,7 @@ public class AdminRentalService {
  public PageResponse<AdminRentalResponse> list(RentalStatus status,String q,int page,int size) {
   String needle=q==null || q.isBlank()?null:"%"+q.trim().toLowerCase(Locale.ROOT)+"%";
   long count=em.createQuery("select count(r)"+FROM+FILTER,Long.class).setParameter("status",status).setParameter("q",needle).getSingleResult();
+  if((long)page*size>Integer.MAX_VALUE) return new PageResponse<>(List.of(),new PageResponse.Meta(page,size,count,(count+size-1)/size));
   var result=em.createQuery("select r"+FROM+FILTER+" order by r.createdAt desc,r.id desc",Rental.class)
    .setParameter("status",status).setParameter("q",needle).setFirstResult(Math.multiplyExact(page,size)).setMaxResults(size).getResultList();
   return new PageResponse<>(result.stream().map(lookup::response).toList(),new PageResponse.Meta(page,size,count,(count+size-1)/size));
