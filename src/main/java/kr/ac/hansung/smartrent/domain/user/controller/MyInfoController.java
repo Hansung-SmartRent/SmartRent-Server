@@ -6,14 +6,18 @@ import jakarta.validation.Valid;
 import kr.ac.hansung.smartrent.domain.user.dto.EmailChangeRequest;
 import kr.ac.hansung.smartrent.domain.user.dto.MeResponse;
 import kr.ac.hansung.smartrent.domain.user.dto.PasswordChangeRequest;
+import kr.ac.hansung.smartrent.domain.user.dto.StudentIdForm;
 import kr.ac.hansung.smartrent.domain.user.service.MyInfoService;
 import kr.ac.hansung.smartrent.domain.user.service.ProfileImageService;
+import kr.ac.hansung.smartrent.domain.user.service.StudentIdService;
 import kr.ac.hansung.smartrent.global.response.ApiResponse;
 import kr.ac.hansung.smartrent.global.security.CurrentUser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,6 +33,7 @@ public class MyInfoController {
 
 	private final MyInfoService myInfoService;
 	private final ProfileImageService profileImageService;
+	private final StudentIdService studentIdService;
 
 	@Operation(summary = "내 정보")
 	@GetMapping
@@ -59,5 +64,12 @@ public class MyInfoController {
 	@DeleteMapping("/profile-image")
 	public ApiResponse<MeResponse> removeProfileImage() {
 		return ApiResponse.ok(profileImageService.remove(CurrentUser.id()));
+	}
+
+	@Operation(summary = "학생증 제출·재제출")
+	@PostMapping(path = "/student-id", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public ApiResponse<MeResponse> submitStudentId(@Valid @ModelAttribute StudentIdForm form,
+		@RequestPart(name = "image", required = false) MultipartFile image) {
+		return ApiResponse.ok(studentIdService.submit(CurrentUser.id(), form.name(), form.studentNumber(), image));
 	}
 }
