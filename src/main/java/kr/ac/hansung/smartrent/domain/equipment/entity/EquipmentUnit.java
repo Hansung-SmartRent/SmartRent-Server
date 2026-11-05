@@ -47,4 +47,9 @@ public class EquipmentUnit {
 
 	@Column(name = "deleted_at", nullable = true)
 	private LocalDateTime deletedAt;
+
+	/** 기기 상태를 바꿉니다(학생의 이상 신고, 관리자의 상태 변경) */
+	public void changeCondition(UnitCondition condition) {
+		this.condition = condition;
+	}
 }

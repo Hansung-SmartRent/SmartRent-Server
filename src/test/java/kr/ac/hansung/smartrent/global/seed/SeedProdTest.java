@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import kr.ac.hansung.smartrent.TestcontainersConfiguration;
 import kr.ac.hansung.smartrent.domain.equipment.repository.EquipmentModelRepository;
 import kr.ac.hansung.smartrent.domain.operation.repository.HolidayRepository;
+import kr.ac.hansung.smartrent.domain.rental.repository.RentalRepository;
 import kr.ac.hansung.smartrent.domain.user.entity.Role;
 import kr.ac.hansung.smartrent.domain.user.repository.UserRepository;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,8 @@ class SeedProdTest {
 	UserRepository users;
 	@Autowired
 	HolidayRepository holidays;
+	@Autowired
+	RentalRepository rentals;
 
 	@Test
 	void B1_03_3_prod는_학생_0명_기자재와_관리자만_들어간다() {
@@ -36,5 +39,6 @@ class SeedProdTest {
 			assertThat(u.getPasswordHash()).startsWith("$2");
 		});
 		assertThat(holidays.count()).isZero();
+		assertThat(rentals.count()).isZero();
 	}
 }

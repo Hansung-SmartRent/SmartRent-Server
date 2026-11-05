@@ -52,7 +52,8 @@
 
 서버가 켜질 때 `global/seed/SeedService`가 넣습니다(B1-03). 이 폴더의 JSON은 빌드할 때 jar 안(`classpath:fixtures/`)에 함께 들어갑니다.
 
-- **local 프로필:** 켤 때마다 확인해서 **비어 있는 표만** 채웁니다(기자재·기기, 계정, 공휴일). 다시 켜도 늘지 않습니다. 다시 넣고 싶으면 `docker compose down -v`로 DB를 지우고 켭니다.
+- **local 프로필:** 켤 때마다 확인해서 **비어 있는 표만** 채웁니다(기자재·기기, 계정, 공휴일, 대여 예시). 다시 켜도 늘지 않습니다. 다시 넣고 싶으면 `docker compose down -v`로 DB를 지우고 켭니다.
 - **prod 프로필:** `.env`에 `SEED_PROD_ENABLED=true`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`(8자 이상)를 넣고 한 번 켜면 기자재와 관리자 계정만 넣습니다. 가짜 학생·공휴일·대여는 넣지 않습니다. 넣은 뒤에는 `SEED_PROD_ENABLED=false`로 돌립니다.
-- users.json의 경고(`warnings`)와 rentals.json은 대여·경고 표가 생긴 뒤(B2-01, B2-12) 같은 로더에 추가합니다. 지금은 정지 기한(`suspendedUntilMonthsFromLoad`)만 넣습니다.
+- rentals.json은 local 프로필에서 대여 표가 비어 있을 때 넣습니다. 날짜는 넣는 날 기준 운영일로 계산하고(쉬는 날이면 다음 운영일), 파손 신고 예시의 기기는 점검 중(`INSPECTION`)으로 바꿉니다.
+- users.json의 경고(`warnings`)와 노쇼 예시의 경고는 경고 표가 생긴 뒤(B2-12) 같은 로더에 추가합니다. 지금은 정지 기한(`suspendedUntilMonthsFromLoad`)만 넣습니다.
 - 넣기 전에 운영 중인 모델끼리 이름이 겹치는지(대소문자·공백 무시) 먼저 보고, 겹치면 하나도 넣지 않고 서버가 켜지지 않습니다.
