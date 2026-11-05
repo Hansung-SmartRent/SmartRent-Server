@@ -87,6 +87,15 @@ public class User extends BaseTimeEntity {
 		this.email = email;
 	}
 
+	/** 학생증 제출·재제출(B1-07): 이름·학번·사진 키를 바꾸고 승인 대기로. 반려 사유는 비움 */
+	public void submitStudentId(String name, String studentNumber, String imageKey) {
+		this.name = name;
+		this.studentNumber = studentNumber;
+		this.studentIdImageKey = imageKey;
+		this.approval = Approval.PENDING;
+		this.rejectReason = null;
+	}
+
 	/** 정지 중인지(DB 설계 3절): 반납 전이라 6개월이 아직 시작 안 됐거나, 정지 종료 시각이 지금보다 뒤 */
 	public boolean isSuspended(java.time.LocalDateTime now) {
 		return suspendedUntilReturn || (suspendedUntil != null && suspendedUntil.isAfter(now));
