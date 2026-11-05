@@ -26,6 +26,21 @@ import org.hibernate.type.SqlTypes;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class Rental extends BaseTimeEntity {
+ public void cancel(String reason) { status=RentalStatus.CANCELLED; cancelReason=reason; }
+ public void noShow() { status=RentalStatus.NO_SHOW; cancelReason="미수령"; }
+ public void pickup(Long unitId,LocalDateTime at,boolean checked) {
+  this.unitId=unitId; pickedAt=at; professorMailChecked=checked; status=RentalStatus.RENTING;
+ }
+ public void returnAt(LocalDateTime at,ReturnCondition condition) {
+  returnedAt=at; returnCondition=condition; status=RentalStatus.RETURNED;
+ }
+ public void correctReturnedAt(LocalDateTime at) { returnedAt=at; }
+ public void extend(LocalDateTime end) { endAt=end; extended=true; dueNotified=false; }
+ public void changeDeadline(LocalDateTime end) { endAt=end; dueNotified=false; }
+ public void requireReturn(boolean required) { returnRequired=required; }
+ public void markDueNotified() { dueNotified=true; }
+ public void markLateWarned() { lateWarned=true; }
+ public void discoverDamage(LocalDateTime at,String note) { damageDiscoveredAt=at; damageNote=note; }
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
