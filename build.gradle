@@ -58,6 +58,8 @@ tasks.named('processResources') {
 
 tasks.named('test') {
 	useJUnitPlatform()
+	// 설정이 다른 통합 시험의 MySQL 컨테이너가 계속 쌓이지 않게 제한합니다.
+	systemProperty 'spring.test.context.cache.maxSize', '4'
 }
 
 tasks.named('bootRun') {
