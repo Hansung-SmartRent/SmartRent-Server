@@ -24,6 +24,8 @@ class RentalJudgmentTest extends RentalSupport {
   at("2026-10-07T10:10:00+09:00"); judgments.processModel(m.getId()); assertThat(r.getStatus()).isEqualTo(RentalStatus.NO_SHOW);
   assertThat(linked.getStatus()).isEqualTo(RentalStatus.CANCELLED); assertThat(linked.getCancelReason()).isEqualTo("연결 신청 미수령");
   assertThat(warningService.count(student())).isEqualTo(1);
+  assertThat(em.createQuery("select x.updatedAt from Rental x where x.id=:id",LocalDateTime.class)
+   .setParameter("id",r.getId()).getSingleResult()).isEqualTo(time("10:10"));
  }
  @Test void B2_10_02_NS_02_historical_shortage_before_no_show() {
   var m=model("17"); var held=record(m,other(),RentalStatus.RENTING,"09:00","10:00");

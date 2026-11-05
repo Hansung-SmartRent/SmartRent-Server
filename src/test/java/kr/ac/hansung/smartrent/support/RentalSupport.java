@@ -28,5 +28,9 @@ public abstract class RentalSupport extends Backend2Support {
    .unitId(status==RentalStatus.RENTING?unit(m).getId():null).build();
   em.persist(r); return r;
  }
- protected void clearRentals() { em.createQuery("delete from Rental").executeUpdate(); em.createQuery("delete from RentalApplication").executeUpdate(); em.clear(); }
+ protected void clearRentals() {
+  em.createQuery("delete from Warning where rentalId is not null").executeUpdate();
+  em.createQuery("delete from Rental").executeUpdate();
+  em.createQuery("delete from RentalApplication").executeUpdate(); em.clear();
+ }
 }
