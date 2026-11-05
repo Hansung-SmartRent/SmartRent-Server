@@ -40,6 +40,17 @@ final class SeedFixtures {
 	}
 
 	@JsonIgnoreProperties(ignoreUnknown = true)
+	record Rentals(List<Rental> rentals) {
+	}
+
+	/** dayOffset: 넣는 날 기준 운영일 N일 뒤(0은 넣는 날, 쉬는 날이면 다음 운영일). start·end·returnedAt은 그날의 시각 */
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	record Rental(String key, String student, String modelKey, String unitCode, String status, int dayOffset,
+		String start, String end, String returnedAt, String returnCondition, Boolean brokenReported,
+		String brokenNote, String cancelReason) {
+	}
+
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	record Holiday(String date, String name, String source, boolean openOverride) {
 	}
 }

@@ -3,6 +3,7 @@ package kr.ac.hansung.smartrent.global.seed;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Clock;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -11,6 +12,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import kr.ac.hansung.smartrent.domain.equipment.entity.EquipmentModel;
 import kr.ac.hansung.smartrent.domain.equipment.entity.EquipmentUnit;
@@ -23,6 +27,13 @@ import kr.ac.hansung.smartrent.domain.equipment.repository.EquipmentUnitReposito
 import kr.ac.hansung.smartrent.domain.operation.entity.Holiday;
 import kr.ac.hansung.smartrent.domain.operation.entity.HolidaySource;
 import kr.ac.hansung.smartrent.domain.operation.repository.HolidayRepository;
+import kr.ac.hansung.smartrent.domain.rental.entity.ApplicationSource;
+import kr.ac.hansung.smartrent.domain.rental.entity.Rental;
+import kr.ac.hansung.smartrent.domain.rental.entity.RentalApplication;
+import kr.ac.hansung.smartrent.domain.rental.entity.RentalStatus;
+import kr.ac.hansung.smartrent.domain.rental.entity.ReturnCondition;
+import kr.ac.hansung.smartrent.domain.rental.repository.RentalApplicationRepository;
+import kr.ac.hansung.smartrent.domain.rental.repository.RentalRepository;
 import kr.ac.hansung.smartrent.domain.user.entity.Approval;
 import kr.ac.hansung.smartrent.domain.user.entity.Role;
 import kr.ac.hansung.smartrent.domain.user.entity.User;
@@ -37,7 +48,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 /**
  * 처음 데이터 넣기(B1-03). 표가 비어 있을 때만 넣어서 서버를 다시 켜도 늘지 않습니다.
- * 대여 예시(rentals.json)는 대여 표(B2-01)가 생긴 뒤에 추가합니다.
+ * 대여 예시(rentals.json)는 local에서만 넣고, 노쇼 예시의 경고는 경고 표(B2-12)가 생긴 뒤에 추가합니다.
  */
 @Slf4j
 @Service
@@ -48,6 +59,8 @@ public class SeedService {
 	private final EquipmentUnitRepository unitRepository;
 	private final UserRepository userRepository;
 	private final HolidayRepository holidayRepository;
+	private final RentalApplicationRepository applicationRepository;
+	private final RentalRepository rentalRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final JsonMapper jsonMapper;
 	private final Clock clock;
@@ -64,6 +77,78 @@ public class SeedService {
 			read("holidays.json", SeedFixtures.Holidays.class).holidays().forEach(this::saveHoliday);
 			log.info("처음 데이터: 공휴일 {}일", holidayRepository.count());
 		}
+		if (rentalRepository.count() == 0) {
+			loadRentals(read("rentals.json", SeedFixtures.Rentals.class).rentals());
+		}
+	}
+
+	/** 상태별 대여 예시(local만). 학생은 users.json의 key, 모델은 key, 기기는 code로 찾습니다 */
+	private void loadRentals(List<SeedFixtures.Rental> rentals) {
+		Map<String, String> emailByKey = read("users.json", SeedFixtures.Users.class).users().stream()
+			.collect(Collectors.toMap(SeedFixtures.User::key, SeedFixtures.User::email));
+		Map<String, EquipmentModel> modelByKey = modelRepository.findAll().stream()
+			.collect(Collectors.toMap(EquipmentModel::getModelKey, Function.identity()));
+		Map<String, EquipmentUnit> unitByCode = unitRepository.findAll().stream()
+			.collect(Collectors.toMap(EquipmentUnit::getCode, Function.identity()));
+		Set<LocalDate> closedDays = holidayRepository.findAll().stream()
+			.filter(h -> !h.isOpenOverride()).map(Holiday::getDate).collect(Collectors.toSet());
+		LocalDate today = operatingDay(LocalDate.now(clock), 1, closedDays);
+		for (SeedFixtures.Rental r : rentals) {
+			User student = userRepository.findByEmail(emailByKey.get(r.student()))
+				.orElseThrow(() -> new IllegalStateException("대여 예시의 학생을 찾지 못했습니다: " + r.student()));
+			EquipmentModel model = require(modelByKey.get(r.modelKey()), "모델", r.modelKey());
+			EquipmentUnit unit = r.unitCode() == null ? null : require(unitByCode.get(r.unitCode()), "기기", r.unitCode());
+			LocalDate day = shift(today, r.dayOffset(), closedDays);
+			LocalDateTime start = day.atTime(LocalTime.parse(r.start()));
+			boolean broken = Boolean.TRUE.equals(r.brokenReported());
+			RentalStatus status = RentalStatus.valueOf(r.status());
+			boolean picked = status == RentalStatus.RENTING || status == RentalStatus.RETURNED;
+			RentalApplication application = applicationRepository.save(RentalApplication.builder()
+				.userId(student.getId()).modelId(model.getId()).source(ApplicationSource.RESERVATION).build());
+			rentalRepository.save(Rental.builder()
+				.applicationId(application.getId())
+				.userId(student.getId())
+				.modelId(model.getId())
+				.unitId(unit == null ? null : unit.getId())
+				.status(status)
+				.startAt(start)
+				.endAt(day.atTime(LocalTime.parse(r.end())))
+				.pickedAt(picked ? start : null)
+				.returnedAt(r.returnedAt() == null ? null : day.atTime(LocalTime.parse(r.returnedAt())))
+				.returnCondition(r.returnCondition() == null ? null : ReturnCondition.valueOf(r.returnCondition()))
+				.brokenReported(broken)
+				.brokenNote(r.brokenNote())
+				.cancelReason(r.cancelReason())
+				.build());
+			if (broken && unit != null) {
+				unit.changeCondition(UnitCondition.INSPECTION); // 신고한 기기는 반납 확인 전까지 내주지 않음(DB 설계 4절)
+			}
+		}
+		log.info("처음 데이터: 대여 예시 {}건", rentalRepository.count());
+	}
+
+	private static <T> T require(T value, String what, String key) {
+		if (value == null) {
+			throw new IllegalStateException("대여 예시의 " + what + "를 찾지 못했습니다: " + key);
+		}
+		return value;
+	}
+
+	/** 운영일 기준으로 n일 옮깁니다. 0이면 그대로, 양수는 뒤로, 음수는 앞으로 */
+	static LocalDate shift(LocalDate operatingDay, int n, Set<LocalDate> closedDays) {
+		LocalDate day = operatingDay;
+		for (int i = 0; i < Math.abs(n); i++) {
+			day = operatingDay(day.plusDays(Integer.signum(n)), Integer.signum(n), closedDays);
+		}
+		return day;
+	}
+
+	/** 쉬는 날(토·일, 운영 해제하지 않은 공휴일)이면 step 방향으로 다음 운영일을 찾습니다 */
+	static LocalDate operatingDay(LocalDate day, int step, Set<LocalDate> closedDays) {
+		while (day.getDayOfWeek() == DayOfWeek.SATURDAY || day.getDayOfWeek() == DayOfWeek.SUNDAY || closedDays.contains(day)) {
+			day = day.plusDays(step);
+		}
+		return day;
 	}
 
 	/** prod 프로필(SEED_PROD_ENABLED=true): 기자재와 관리자 계정만. 가짜 학생·대여·공휴일은 넣지 않음 */
