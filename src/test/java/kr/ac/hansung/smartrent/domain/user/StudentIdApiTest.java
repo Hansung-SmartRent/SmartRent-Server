@@ -57,6 +57,10 @@ class StudentIdApiTest {
 		public void toAdmins(String title, String body, Long relatedUserId) {
 			sent.add(relatedUserId);
 		}
+
+		@Override
+		public void toStudent(Long userId, String title, String body) {
+		}
 	}
 
 	@TestConfiguration

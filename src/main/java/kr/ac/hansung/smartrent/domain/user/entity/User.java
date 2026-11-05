@@ -102,6 +102,26 @@ public class User extends BaseTimeEntity {
 		this.studentNumber = studentNumber;
 	}
 
+	/** 가입 승인(B1-15). 학생증 사진 키를 비우고, 비우기 전 키를 돌려줌(지울 대상) */
+	public String approve() {
+		this.approval = Approval.APPROVED;
+		this.rejectReason = null;
+		return takeStudentIdImageKey();
+	}
+
+	/** 가입 반려(B1-15). 사유를 남기고 학생증 사진 키를 비우며, 비우기 전 키를 돌려줌(지울 대상) */
+	public String reject(String reason) {
+		this.approval = Approval.REJECTED;
+		this.rejectReason = reason;
+		return takeStudentIdImageKey();
+	}
+
+	private String takeStudentIdImageKey() {
+		String key = this.studentIdImageKey;
+		this.studentIdImageKey = null;
+		return key;
+	}
+
 	/** 정지 중인지(DB 설계 3절): 반납 전이라 6개월이 아직 시작 안 됐거나, 정지 종료 시각이 지금보다 뒤 */
 	public boolean isSuspended(java.time.LocalDateTime now) {
 		return suspendedUntilReturn || (suspendedUntil != null && suspendedUntil.isAfter(now));

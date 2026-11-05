@@ -8,6 +8,7 @@ import jakarta.validation.constraints.Min;
 import kr.ac.hansung.smartrent.domain.user.dto.AdminStudentDetailResponse;
 import kr.ac.hansung.smartrent.domain.user.dto.AdminStudentResponse;
 import kr.ac.hansung.smartrent.domain.user.dto.PageResponse;
+import kr.ac.hansung.smartrent.domain.user.dto.RejectRequest;
 import kr.ac.hansung.smartrent.domain.user.dto.StudentPatchRequest;
 import kr.ac.hansung.smartrent.domain.user.entity.Approval;
 import kr.ac.hansung.smartrent.domain.user.service.AdminStudentService;
@@ -18,6 +19,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -53,5 +55,17 @@ public class AdminStudentController {
 	@PatchMapping("/{id}")
 	public ApiResponse<AdminStudentResponse> correct(@PathVariable Long id, @Valid @RequestBody StudentPatchRequest request) {
 		return ApiResponse.ok(adminStudentService.correct(id, request.name(), request.studentNumber(), CurrentUser.id()));
+	}
+
+	@Operation(summary = "가입 승인")
+	@PostMapping("/{id}/approve")
+	public ApiResponse<AdminStudentResponse> approve(@PathVariable Long id) {
+		return ApiResponse.ok(adminStudentService.approve(id, CurrentUser.id()));
+	}
+
+	@Operation(summary = "가입 반려")
+	@PostMapping("/{id}/reject")
+	public ApiResponse<AdminStudentResponse> reject(@PathVariable Long id, @Valid @RequestBody RejectRequest request) {
+		return ApiResponse.ok(adminStudentService.reject(id, request.reason(), CurrentUser.id()));
 	}
 }
