@@ -107,7 +107,7 @@ public class AdminStudentService {
 		}
 		warningRestorer.restore(id, user.getStudentNumber());
 		auditLogService.record(APPROVE_STUDENT, "가입 승인(학생 id " + id + ", 학번 " + user.getStudentNumber() + ")", adminId);
-		accountAlert.toStudent(id, "계정 승인", "이제 기자재를 예약할 수 있습니다.");
+		accountAlert.toStudent(id, "계정 승인", "이제 대여를 신청할 수 있습니다.");
 		return AdminStudentResponse.of(userRepository.saveAndFlush(user), warningCounter.count(id), LocalDateTime.now(clock));
 	}
 
