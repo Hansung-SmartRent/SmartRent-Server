@@ -47,7 +47,7 @@ public class WarningService implements ActiveWarningCounter {
  public void reconcile(User user,LocalDateTime at) {
   var held=held(user.getId());
   if(count(user.getId())<3) {
-   user.changeSuspension(null,false,false); held.forEach(r->r.requireReturn(false)); return;
+   user.changeSuspension(null,false,user.isSuspensionStartedByReturn()); held.forEach(r->r.requireReturn(false)); return;
   }
   if(user.isSuspended(at)) return;
   if(held.isEmpty()) user.changeSuspension(at.plusMonths(6),false,false);
@@ -73,19 +73,20 @@ public class WarningService implements ActiveWarningCounter {
   audit.record("WARNING_REVOKE","경고 "+id+": 유효 -> 취소, "+reason,actor);
  }
  public void revokeForCorrection(Rental r,WarningKind kind) {
-  warnings.findByRentalIdAndKind(r.getId(),kind).filter(w->w.getRevokedAt()==null).ifPresent(w->w.revoke(LocalDateTime.now(clock),"관리자 시각 정정"));
+  warnings.findByRentalIdAndKind(r.getId(),kind).filter(w->w.getRevokedAt()==null).ifPresent(w->w.revokeForCorrection(LocalDateTime.now(clock)));
   reconcile(em.find(User.class,r.getUserId(),LockModeType.PESSIMISTIC_WRITE),LocalDateTime.now(clock));
  }
  public void correctLate(Rental r) {
+  boolean returnBased=em.find(User.class,r.getUserId()).isSuspensionStartedByReturn();
   if(!r.getReturnedAt().isAfter(r.getEndAt())) revokeForCorrection(r,WarningKind.LATE);
   else {
    var previous=warnings.findByRentalIdAndKind(r.getId(),WarningKind.LATE);
-   if(previous.isPresent() && "관리자 시각 정정".equals(previous.get().getRevokeReason())) {
+   if(previous.isPresent() && previous.get().isRevokedByCorrection()) {
     previous.get().reinstate(); reconcile(em.find(User.class,r.getUserId(),LockModeType.PESSIMISTIC_WRITE),r.getReturnedAt());
    } else if(previous.isEmpty()) give(r,WarningKind.LATE,r.getEndAt());
   }
   var user=em.find(User.class,r.getUserId());
-  if(user.isSuspensionStartedByReturn() && count(user.getId())>=3 && held(user.getId()).isEmpty()) {
+  if(returnBased && count(user.getId())>=3 && held(user.getId()).isEmpty()) {
    var last=em.createQuery("select max(r.returnedAt) from Rental r where r.userId=:id",LocalDateTime.class)
     .setParameter("id",user.getId()).getSingleResult();
    user.changeSuspension(last.plusMonths(6),false,true);

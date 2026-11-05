@@ -45,6 +45,13 @@ class RentalCorrectionApiTest extends RentalSupport {
   assertThat(warnings.count(student())).isEqualTo(1); assertThat(em.find(EquipmentUnit.class,r.getUnitId()).getCondition()).isEqualTo(UnitCondition.DAMAGED);
   assertThat(r.getDamageDiscoveredAt()).isEqualTo(time("13:00"));
  }
+ @Test void B2_11_manual_revoke_not_reinstated_by_reason_text() throws Exception {
+  var r=returned();
+  var w=em.createQuery("select w from Warning w where w.rentalId=:id",Warning.class).setParameter("id",r.getId()).getSingleResult();
+  warnings.revoke(w.getId(),"관리자 시각 정정",admin());
+  post(r,"correct-return","{\"actualReturnedAt\":\"2026-10-07T12:10:00+09:00\"}",200);
+  assertThat(warnings.count(student())).isZero();
+ }
  @Test void B2_11_06_reported_damage_no_warning() throws Exception {
   var r=record(model("17"),student(),RentalStatus.RENTING,"10:00","12:00"); r.returnAt(time("11:00"),ReturnCondition.NORMAL);
   em.flush(); em.createQuery("update Rental r set r.brokenReported=true where r.id=:id").setParameter("id",r.getId()).executeUpdate(); em.refresh(r);

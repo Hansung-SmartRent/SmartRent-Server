@@ -14,9 +14,11 @@ public class Warning {
  @Column(nullable=false) private LocalDateTime createdAt;
  private LocalDateTime revokedAt;
  @Column(length=100) private String revokeReason;
+ @Column(nullable=false) private boolean revokedByCorrection;
  private LocalDateTime expiresAt;
  public boolean active(LocalDateTime now) { return revokedAt==null && (expiresAt==null || expiresAt.isAfter(now)); }
- public void revoke(LocalDateTime at,String reason) { revokedAt=at; revokeReason=reason; }
+ public void revoke(LocalDateTime at,String reason) { revokedAt=at; revokeReason=reason; revokedByCorrection=false; }
+ public void revokeForCorrection(LocalDateTime at) { revoke(at,"관리자 시각 정정"); revokedByCorrection=true; }
  public void expire(LocalDateTime at) { expiresAt=at; }
- public void reinstate() { revokedAt=null; revokeReason=null; }
+ public void reinstate() { revokedAt=null; revokeReason=null; revokedByCorrection=false; }
 }
