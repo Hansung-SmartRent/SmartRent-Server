@@ -10,10 +10,12 @@ import kr.ac.hansung.smartrent.domain.user.dto.StudentIdForm;
 import kr.ac.hansung.smartrent.domain.user.service.MyInfoService;
 import kr.ac.hansung.smartrent.domain.user.service.ProfileImageService;
 import kr.ac.hansung.smartrent.domain.user.service.StudentIdService;
+import kr.ac.hansung.smartrent.domain.user.service.WithdrawService;
 import kr.ac.hansung.smartrent.global.response.ApiResponse;
 import kr.ac.hansung.smartrent.global.security.CurrentUser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -34,11 +36,20 @@ public class MyInfoController {
 	private final MyInfoService myInfoService;
 	private final ProfileImageService profileImageService;
 	private final StudentIdService studentIdService;
+	private final WithdrawService withdrawService;
 
 	@Operation(summary = "내 정보")
 	@GetMapping
 	public ApiResponse<MeResponse> me() {
 		return ApiResponse.ok(myInfoService.me(CurrentUser.id()));
+	}
+
+	@Operation(summary = "탈퇴")
+	@DeleteMapping
+	@PreAuthorize("hasRole('STUDENT')")
+	public ApiResponse<Void> withdraw() {
+		withdrawService.withdraw(CurrentUser.id());
+		return ApiResponse.ok(null);
 	}
 
 	@Operation(summary = "비밀번호 변경")
