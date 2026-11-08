@@ -39,4 +39,10 @@ public class OperatingHours {
 
 	@Column(name = "close_time", nullable = false)
 	private LocalTime closeTime;
+
+	/** 같은 기본·날짜 변경을 다시 넣으면 시간만 바꿈(B1-20) */
+	public void change(LocalTime openTime, LocalTime closeTime) {
+		this.openTime = openTime;
+		this.closeTime = closeTime;
+	}
 }
