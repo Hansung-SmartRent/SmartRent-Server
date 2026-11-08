@@ -108,4 +108,33 @@ public class EquipmentModel extends BaseTimeEntity {
 
 	@Column(name = "archived", nullable = false)
 	private boolean archived;
+
+	/** 관리자 모델 수정(B1-17). 운영 중이면 name_key도 새 이름으로, 운영 종료 모델은 비워 둠 */
+	public void update(String category, String name, String manufacturer, String purchaseYear, String purpose,
+		RentalType rentalType, boolean multiDay, Integer maxRentalDays, Integer maxRentalMinutes, boolean carryOut,
+		String location, String contact, LocalTime openTime, LocalTime closeTime, int intervalMinutes, String guide) {
+		this.category = category;
+		this.name = name;
+		this.nameKey = archived ? null : nameKeyOf(name);
+		this.manufacturer = manufacturer;
+		this.purchaseYear = purchaseYear;
+		this.purpose = purpose;
+		this.rentalType = rentalType;
+		this.multiDay = multiDay;
+		this.maxRentalDays = maxRentalDays;
+		this.maxRentalMinutes = maxRentalMinutes;
+		this.carryOut = carryOut;
+		this.location = location;
+		this.contact = contact;
+		this.openTime = openTime;
+		this.closeTime = closeTime;
+		this.intervalMinutes = intervalMinutes;
+		this.guide = guide;
+	}
+
+	/** 모델 운영 종료(B1-17, DB 설계 3·4절): archived = true, 같은 이름을 다시 쓸 수 있게 name_key를 비움 */
+	public void archive() {
+		this.archived = true;
+		this.nameKey = null;
+	}
 }

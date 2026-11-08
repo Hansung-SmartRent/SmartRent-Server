@@ -1,12 +1,9 @@
 package kr.ac.hansung.smartrent.domain.equipment.service;
 
-import java.util.List;
-
 import kr.ac.hansung.smartrent.domain.equipment.dto.AdminModelDetailResponse;
 import kr.ac.hansung.smartrent.domain.equipment.entity.EquipmentModel;
 import kr.ac.hansung.smartrent.domain.equipment.entity.ModelImage;
 import kr.ac.hansung.smartrent.domain.equipment.repository.EquipmentModelRepository;
-import kr.ac.hansung.smartrent.domain.equipment.repository.EquipmentUnitRepository;
 import kr.ac.hansung.smartrent.domain.equipment.repository.ModelImageRepository;
 import kr.ac.hansung.smartrent.global.exception.BusinessException;
 import kr.ac.hansung.smartrent.global.exception.ErrorCode;
@@ -28,10 +25,10 @@ public class ModelImageService {
 
 	private final EquipmentModelRepository modelRepository;
 	private final ModelImageRepository imageRepository;
-	private final EquipmentUnitRepository unitRepository;
 	private final StorageService storageService;
 	private final StorageDeletionService deletionService;
 	private final TransactionTemplate transactionTemplate;
+	private final ModelQueryService modelQueryService;
 
 	public AdminModelDetailResponse add(Long modelId, MultipartFile file) {
 		EquipmentModel model = modelRepository.findById(modelId).orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
@@ -58,8 +55,6 @@ public class ModelImageService {
 	}
 
 	private AdminModelDetailResponse detail(EquipmentModel model) {
-		List<String> urls = imageRepository.findAllByModelIdOrderBySortOrderAsc(model.getId()).stream()
-			.map(i -> storageService.temporaryUrl(i.getImageKey())).toList();
-		return AdminModelDetailResponse.of(model, urls, unitRepository.findAllByModelIdAndDeletedAtIsNullOrderByIdAsc(model.getId()));
+		return modelQueryService.adminDetail(model);
 	}
 }

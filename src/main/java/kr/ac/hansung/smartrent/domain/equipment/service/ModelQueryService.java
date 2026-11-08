@@ -3,8 +3,13 @@ package kr.ac.hansung.smartrent.domain.equipment.service;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
+
+import jakarta.persistence.EntityManager;
+import kr.ac.hansung.smartrent.domain.equipment.dto.AdminModelDetailResponse;
 
 import kr.ac.hansung.smartrent.domain.equipment.dto.ModelDetailResponse;
 import kr.ac.hansung.smartrent.domain.equipment.dto.ModelSummaryResponse;
@@ -17,6 +22,7 @@ import kr.ac.hansung.smartrent.domain.equipment.repository.ModelImageRepository;
 import kr.ac.hansung.smartrent.domain.rental.calculation.RentalCalendar;
 import kr.ac.hansung.smartrent.domain.rental.calculation.RentalSegment;
 import kr.ac.hansung.smartrent.domain.rental.calculation.RentalSlotCalculator;
+import kr.ac.hansung.smartrent.domain.rental.entity.RentalStatus;
 import kr.ac.hansung.smartrent.domain.rental.service.RentalCalendarReader;
 import kr.ac.hansung.smartrent.domain.rental.service.RentalCapacityService;
 import kr.ac.hansung.smartrent.global.exception.BusinessException;
@@ -39,6 +45,7 @@ public class ModelQueryService {
 	private final RentalCalendarReader calendarReader;
 	private final RentalCapacityService capacityService;
 	private final Clock clock;
+	private final EntityManager em;
 	private final RentalSlotCalculator slotCalculator = new RentalSlotCalculator();
 
 	/** 운영 종료 모델은 빼고, 카테고리는 같은 값만, q는 이름·카테고리·제조사·활용 목적의 부분 문자열(대소문자 무시) */
@@ -74,6 +81,24 @@ public class ModelQueryService {
 			.map(i -> storageService.temporaryUrl(i.getImageKey())).toList();
 		return ModelDetailResponse.of(model, calendar.isClosed(today) ? null : calendar.hours(today), urls,
 			normalUnits(model), availableNow(model, calendar));
+	}
+
+	/** 관리자용 상세(B1-17): 운영 종료 모델도 보이고 개별 기기와 지금 대여 중인지까지 */
+	public AdminModelDetailResponse adminDetail(Long id) {
+		return adminDetail(modelRepository.findById(id).orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND)));
+	}
+
+	public AdminModelDetailResponse adminDetail(EquipmentModel model) {
+		RentalCalendar calendar = calendarReader.read(model);
+		LocalDate today = LocalDate.now(clock);
+		List<String> urls = imageRepository.findAllByModelIdOrderBySortOrderAsc(model.getId()).stream()
+			.map(i -> storageService.temporaryUrl(i.getImageKey())).toList();
+		Set<Long> inUse = new HashSet<>(em.createQuery(
+				"select r.unitId from Rental r where r.modelId = :id and r.status = :status and r.unitId is not null", Long.class)
+			.setParameter("id", model.getId()).setParameter("status", RentalStatus.RENTING).getResultList());
+		return AdminModelDetailResponse.of(model, calendar.isClosed(today) ? null : calendar.hours(today), urls,
+			unitRepository.findAllByModelIdAndDeletedAtIsNullOrderByIdAsc(model.getId()), inUse,
+			model.isArchived() ? 0 : availableNow(model, calendar));
 	}
 
 	/**
