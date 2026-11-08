@@ -52,4 +52,14 @@ public class EquipmentUnit {
 	public void changeCondition(UnitCondition condition) {
 		this.condition = condition;
 	}
+
+	/** 관리자 기기 이름 변경(B1-18) */
+	public void rename(String name) {
+		this.name = name;
+	}
+
+	/** 관리자 기기 삭제(B1-18, DB 설계 4절): 행은 두고 deleted_at만 표시 */
+	public void delete(LocalDateTime at) {
+		this.deletedAt = at;
+	}
 }
