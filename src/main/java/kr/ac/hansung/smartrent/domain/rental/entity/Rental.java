@@ -41,6 +41,7 @@ public class Rental extends BaseTimeEntity {
  public void markDueNotified() { dueNotified=true; }
  public void markLateWarned() { lateWarned=true; }
  public void discoverDamage(LocalDateTime at,String note) { damageDiscoveredAt=at; damageNote=note; }
+ public void reportBroken(String note) { brokenReported=true; brokenNote=note; }
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
