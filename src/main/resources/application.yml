@@ -68,6 +68,13 @@ smartrent:
     model-verified: ${AI_MODEL_VERIFIED:false}
     base-url: https://generativelanguage.googleapis.com
     timeout: 20s
+  holiday:
+    # 공휴일 받기(공공데이터포털 특일 정보, 외부 연결 4절). false면 처음 데이터(fixtures/holidays.json)의 공휴일만 씀
+    sync-enabled: ${HOLIDAY_SYNC_ENABLED:false}
+    # 포털의 일반 인증키(Decoding)
+    api-key: ${HOLIDAY_API_KEY:}
+    base-url: https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService
+    timeout: 10s
   seed:
     # local 프로필은 항상 빈 표에 처음 데이터를 넣음. prod는 이 값이 true일 때만 기자재와 관리자 계정을 넣음(B1-03)
     prod-enabled: ${SEED_PROD_ENABLED:false}
