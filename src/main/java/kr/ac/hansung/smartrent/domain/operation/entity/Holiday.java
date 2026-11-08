@@ -48,4 +48,19 @@ public class Holiday {
 	@LastModifiedDate
 	@Column(name = "updated_at", nullable = false)
 	private LocalDateTime updatedAt;
+
+	/** 공휴일 이름이 바뀌었거나 관리자가 임시 휴무 이름을 다시 넣을 때(B1-19) */
+	public void rename(String name) {
+		this.name = name;
+	}
+
+	/** 공휴일에 운영하기(휴무 해제) */
+	public void openOnHoliday() {
+		this.openOverride = true;
+	}
+
+	/** 공휴일 운영 해제를 취소해 다시 쉬는 날로 */
+	public void closeAgain() {
+		this.openOverride = false;
+	}
 }
