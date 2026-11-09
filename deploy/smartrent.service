@@ -1,0 +1,21 @@
+# 서버 자동 실행 설정. /etc/systemd/system/smartrent.service로 복사합니다(README 배포 절).
+# .env는 WorkingDirectory에서 읽습니다.
+[Unit]
+Description=SmartRent API server
+After=network-online.target mysql.service
+Wants=network-online.target mysql.service
+
+[Service]
+Type=simple
+User=smartrent
+WorkingDirectory=/opt/smartrent
+Environment=SPRING_PROFILES_ACTIVE=prod
+ExecStart=/usr/bin/java -XX:MaxRAMPercentage=50 -jar /opt/smartrent/smartrent.jar
+SuccessExitStatus=143
+Restart=on-failure
+RestartSec=10
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

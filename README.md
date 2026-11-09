@@ -123,4 +123,157 @@ docker compose up -d mysql
 
 ## 배포
 
-AWS EC2 한 대에 서버와 MySQL 9.7, 사진은 S3, DB는 매일 `mysqldump`로 S3에 백업(확정). 절차는 이슈 [B1-25](docs/issues/B1-25.md)에서 정해 이 절을 채웁니다.
+AWS EC2 한 대에 서버와 MySQL 9.7, 사진은 S3, DB는 매일 `mysqldump`로 S3에 백업(확정). 아래 절차와 설정 파일(`deploy/`)은 이슈 [B1-25](docs/issues/B1-25.md)에서 만들었습니다.
+
+리전은 시드니(`ap-southeast-2`)입니다. EC2도 S3 버킷과 같은 리전에 둡니다.
+
+### 1. AWS에서 준비할 것
+
+| 항목 | 값 |
+|---|---|
+| OS | Ubuntu Server 24.04 LTS, 64비트(x86). MySQL 9.7 공식 지원 플랫폼 |
+| 사양 | `t3.small` (2 vCPU, 메모리 2GB). `t3.micro`(1GB)는 서버와 MySQL을 같이 돌리기에 모자람 |
+| 디스크 | 20GB gp3 |
+| 월 비용 | 하루 종일 켜 두면 약 25달러 (서버 시간당 0.0264달러로 약 19달러, 디스크와 공인 IP 몇 달러) |
+
+- EC2 한 대를 만듭니다. 보안 그룹은 SSH(22)는 내 IP만, HTTP(80)와 HTTPS(443)는 모두에게 엽니다. 서버 포트(8080)와 MySQL(3306)은 열지 않습니다. 밖에서 오는 요청은 Nginx가 443으로 받아 서버 안에서 8080으로 넘깁니다.
+- 탄력적 IP를 할당해 EC2에 연결합니다. 껐다 켜도 주소가 바뀌지 않습니다. EC2를 없앨 때는 탄력적 IP도 같이 해제합니다(연결 안 된 IP는 요금이 나감).
+- 도메인(DuckDNS 무료 도메인 `hansung-smartrent.duckdns.org`)이 탄력적 IP를 가리키게 합니다. HTTPS 인증서를 받으려면 도메인이 필요합니다.
+- EC2 IAM 역할을 만들어 붙입니다. 이 버킷 하나에 대한 객체 읽기·쓰기·삭제와 목록 보기 권한만 인라인 정책으로 줍니다.
+- S3 `backup/`에 수명 주기 규칙을 넣어 오래된 덤프를 지웁니다. 접두사 `backup/`, 객체 생성 7일 뒤 만료로 둡니다(사진이 지워지지 않게 접두사를 꼭 넣음).
+
+### 2. 서버에 설치
+
+Java 21과 MySQL 9.7을 설치합니다. MySQL 9.7은 Ubuntu 기본 저장소에 없어서 MySQL 공식 APT 저장소를 등록합니다. 서명 열쇠 지문은 `BCA4 3417 C3B4 85DD 128E C6D4 B7B3 B788 A8D3 785C`입니다.
+
+```bash
+sudo apt-get update
+curl -fsSL https://repo.mysql.com/RPM-GPG-KEY-mysql-2025 -o /tmp/mysql.asc
+gpg --show-keys --with-fingerprint /tmp/mysql.asc   # 지문 확인
+sudo install -d -m 0755 /etc/apt/keyrings
+sudo gpg --dearmor -o /etc/apt/keyrings/mysql.gpg /tmp/mysql.asc
+echo "deb [signed-by=/etc/apt/keyrings/mysql.gpg] http://repo.mysql.com/apt/ubuntu noble mysql-9.7-lts" \
+  | sudo tee /etc/apt/sources.list.d/mysql.list
+sudo apt-get update
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y openjdk-21-jre-headless mysql-server
+```
+
+MySQL root는 비밀번호 없이 `sudo mysql`로만 들어갑니다. MySQL은 서버 안에서만 받게 하고, 메모리가 2GB라 스왑 2GB를 만듭니다.
+
+```bash
+printf "[mysqld]\nbind-address = 127.0.0.1\nmysqlx = OFF\n" | sudo tee /etc/mysql/mysql.conf.d/smartrent.cnf
+sudo systemctl restart mysql
+
+sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile
+sudo mkswap /swapfile && sudo swapon /swapfile
+echo "/swapfile none swap sw 0 0" | sudo tee -a /etc/fstab
+```
+
+서버를 실행할 사용자와 폴더를 만듭니다.
+
+```bash
+sudo useradd --system --create-home --shell /usr/sbin/nologin smartrent
+sudo mkdir -p /opt/smartrent /etc/smartrent
+sudo chown smartrent:smartrent /opt/smartrent
+```
+
+서버 OS 시간대는 UTC 그대로 둡니다. 앱이 시작할 때 JVM 기본 시간대를 `Asia/Seoul`로 맞추고 DB에도 그 시간으로 저장합니다.
+
+### 3. 빈 DB와 스키마
+
+MySQL에 빈 `smartrent` DB와 접속 사용자를 만듭니다. 표는 직접 만들지 않습니다. 서버가 처음 켜질 때 Flyway가 `db/migration`을 순서대로 적용하고 `ddl-auto=validate`로 검사합니다.
+
+```sql
+CREATE DATABASE smartrent CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+CREATE USER 'smartrent'@'localhost' IDENTIFIED BY '비밀번호';
+GRANT ALL PRIVILEGES ON smartrent.* TO 'smartrent'@'localhost';
+
+-- 백업 전용 사용자(읽기와 덤프에 필요한 권한만)
+CREATE USER 'smartrent_backup'@'localhost' IDENTIFIED BY '다른비밀번호';
+GRANT SELECT, SHOW VIEW, TRIGGER, EVENT, LOCK TABLES ON smartrent.* TO 'smartrent_backup'@'localhost';
+GRANT RELOAD, PROCESS ON *.* TO 'smartrent_backup'@'localhost';
+```
+
+서버 사용자에게는 전체 권한(`*.*`)을 주지 않습니다. MySQL 9.7의 `mysqldump --single-transaction`은 전체 권한인 `RELOAD`가 필요해서 백업 사용자를 따로 둡니다.
+
+스키마를 바꾸는 배포 전에는 아래 5번의 백업을 먼저 한 번 실행합니다.
+
+### 4. 서버 올리기
+
+내 컴퓨터에서 `./gradlew bootJar`로 만든 `build/libs/smartrent-0.0.1-SNAPSHOT.jar`를 서버의 `/opt/smartrent/smartrent.jar`로 올립니다.
+
+`/opt/smartrent/.env`는 `.env.example`을 복사해 채우고 서버에만 둡니다(`chmod 600` 소유자 `smartrent`).
+
+| 항목 | 운영 값 |
+|---|---|
+| `DB_URL` | 포트를 맞춘 EC2의 MySQL 주소 |
+| `DB_USERNAME` `DB_PASSWORD` | 3번에서 만든 값 |
+| `JWT_SECRET` | 개발용과 다른 32자 이상 임의 문자열 |
+| `STORAGE_MODE` `S3_BUCKET` | `s3`와 버킷 이름 |
+| `AWS_ACCESS_KEY_ID` `AWS_SECRET_ACCESS_KEY` | **넣지 않음** (EC2 IAM 역할 사용) |
+| `HOLIDAY_SYNC_ENABLED` `HOLIDAY_API_KEY` | `true`와 인증키 (노동절·제헌절은 처음 데이터에 없어 자동 받기로 채움) |
+| `SEED_PROD_ENABLED` `ADMIN_EMAIL` `ADMIN_PASSWORD` | 기자재와 관리자 계정을 넣을 첫 실행에만 `true`와 관리자 정보. 가짜 학생·대여 데이터는 넣지 않음 |
+
+```bash
+sudo cp deploy/smartrent.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now smartrent
+curl http://localhost:8080/api/v1/health
+```
+
+#### HTTPS (Nginx와 Let's Encrypt)
+
+앱은 `https://hansung-smartrent.duckdns.org`로 접속합니다. 휴대폰 앱은 암호화되지 않은 http 접속을 기본으로 막기 때문에 HTTPS가 필요합니다.
+
+```bash
+sudo apt install -y nginx certbot python3-certbot-nginx
+sudo cp deploy/nginx-smartrent.conf /etc/nginx/sites-available/smartrent
+sudo ln -s /etc/nginx/sites-available/smartrent /etc/nginx/sites-enabled/smartrent
+sudo rm /etc/nginx/sites-enabled/default
+sudo nginx -t && sudo systemctl reload nginx
+sudo certbot --nginx -d hansung-smartrent.duckdns.org --redirect
+sudo certbot renew --dry-run   # 자동 갱신 시험
+```
+
+certbot이 443 설정과 http에서 https로 돌려보내는 설정을 넣습니다. 인증서는 90일짜리이고 `certbot.timer`가 자동으로 갱신합니다. 갱신할 때 80 포트를 쓰므로 보안 그룹에서 80을 닫지 않습니다.
+
+### 5. 매일 백업
+
+백업 스크립트는 AWS CLI를 씁니다. [AWS 공식 설치 안내](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)의 Linux x86 방법으로 설치합니다(`unzip` 필요).
+
+```bash
+sudo cp deploy/backup-db.sh /opt/smartrent/
+sudo cp deploy/smartrent-backup.service deploy/smartrent-backup.timer /etc/systemd/system/
+```
+
+`/etc/smartrent/backup.env` (S3 위치):
+
+```
+S3_BUCKET=버킷이름
+AWS_DEFAULT_REGION=ap-southeast-2
+```
+
+`/etc/smartrent/backup.cnf` (`chmod 600` 소유자 `smartrent`):
+
+```
+[client]
+user=smartrent_backup
+password=다른비밀번호
+```
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now smartrent-backup.timer
+sudo systemctl start smartrent-backup.service   # 바로 한 번 실행
+```
+
+### 6. 복원
+
+서버를 멈추고 백업 파일을 빈 `smartrent` DB에 넣습니다. 백업 사용자는 읽기 권한만 있어서 복원은 MySQL 관리자(`sudo mysql`)로 합니다.
+
+```bash
+sudo systemctl stop smartrent
+aws s3 cp s3://버킷이름/backup/파일이름.sql.gz .
+gunzip -c 파일이름.sql.gz | sudo mysql smartrent
+sudo systemctl start smartrent
+```
