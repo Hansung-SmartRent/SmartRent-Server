@@ -59,6 +59,9 @@ smartrent:
     local-dir: ${STORAGE_LOCAL_DIR:}
     s3-bucket: ${S3_BUCKET:}
     aws-region: ${AWS_REGION:ap-northeast-2}
+    # 개인 컴퓨터에서 S3를 시험할 때만 넣음. 비우면 EC2 IAM 역할로만 접속
+    aws-access-key-id: ${AWS_ACCESS_KEY_ID:}
+    aws-secret-access-key: ${AWS_SECRET_ACCESS_KEY:}
   ai:
     # AI 추천(Gemini API, 외부 연결 3절). false면 모델 이름에 사용 목적의 단어가 들어간 모델을 고르는 대체 추천
     enabled: ${AI_ENABLED:false}
