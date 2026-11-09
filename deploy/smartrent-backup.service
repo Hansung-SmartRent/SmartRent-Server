@@ -1,0 +1,12 @@
+# DB 백업 1회 실행. smartrent-backup.timer가 매일 부릅니다.
+[Unit]
+Description=SmartRent DB backup to S3
+After=mysql.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=smartrent
+EnvironmentFile=/etc/smartrent/backup.env
+ExecStart=/opt/smartrent/backup-db.sh
+PrivateTmp=true

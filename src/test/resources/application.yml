@@ -27,5 +27,5 @@ smartrent:
     # 시험은 시험마다 만든 임시 폴더를 씀(StorageTestConfig). 1분 재시도는 시험이 직접 부름
     mode: local
     local-dir: build/test-uploads
-    aws-region: ap-northeast-2
+    aws-region: ap-southeast-2
     retry-enabled: false

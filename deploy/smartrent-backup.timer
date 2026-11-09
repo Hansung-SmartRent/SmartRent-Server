@@ -1,0 +1,10 @@
+# 매일 새벽 3시(한국 시간) DB 백업. 꺼져 있던 동안 놓친 백업은 켜질 때 실행합니다.
+[Unit]
+Description=Daily SmartRent DB backup
+
+[Timer]
+OnCalendar=*-*-* 03:00:00 Asia/Seoul
+Persistent=true
+
+[Install]
+WantedBy=timers.target
