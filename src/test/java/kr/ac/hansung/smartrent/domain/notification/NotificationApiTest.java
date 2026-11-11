@@ -8,10 +8,13 @@ import kr.ac.hansung.smartrent.domain.notification.repository.*;
 import kr.ac.hansung.smartrent.domain.notification.service.*;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import kr.ac.hansung.smartrent.domain.auth.service.TokenService;
 class NotificationApiTest extends Backend2Support {
  @Autowired NotificationService service;
  @Autowired NotificationRepository notifications;
  @Autowired PushTokenRepository tokens;
+ @Autowired TokenService tokenService;
  @BeforeEach void setupToken() { service.register(student(),"test-device",PushPlatform.ANDROID); }
  @AfterEach void cleanup() { tokens.deleteAll(); notifications.deleteAll(); }
  Notification notifyOne() { return service.notify(student(),NotificationKind.DUE,"반납 안내","반납 기한 안내",RelatedType.RENTAL,1L); }
@@ -45,5 +48,42 @@ class NotificationApiTest extends Backend2Support {
  @Test void B2_13_logout_removes_only_own_token() {
   service.remove(other(),"test-device"); assertThat(tokens.findByToken("test-device")).isPresent();
   service.remove(student(),"test-device"); assertThat(tokens.findByToken("test-device")).isEmpty();
+ }
+ @Test void B2_13_04_read_all_and_list_are_scoped_to_current_user() throws Exception {
+  var mine=notifyOne();
+  var theirs=service.notify(other(),NotificationKind.DUE,"반납 안내","다른 학생 알림",RelatedType.RENTAL,2L);
+  mvc.perform(post("/api/v1/notifications/read-all").header("Authorization",studentToken()))
+   .andExpect(status().isOk());
+  assertThat(notifications.findById(mine.getId()).orElseThrow().isRead()).isTrue();
+  assertThat(notifications.findById(theirs.getId()).orElseThrow().isRead()).isFalse();
+  mvc.perform(get("/api/v1/notifications").header("Authorization",studentToken()))
+   .andExpect(status().isOk()).andExpect(jsonPath("$.data.items.length()").value(1))
+   .andExpect(jsonPath("$.data.items[0].id").value(mine.getId()))
+   .andExpect(jsonPath("$.data.page.totalElements").value(1));
+ }
+ @Test void B2_13_token_registration_and_logout_remove_only_current_device() throws Exception {
+  service.register(student(),"second-device",PushPlatform.IOS);
+  service.register(other(),"other-device",PushPlatform.ANDROID);
+  mvc.perform(put("/api/v1/users/me/push-token").header("Authorization",studentToken())
+   .contentType(MediaType.APPLICATION_JSON).content("{\"token\":\"test-device\",\"platform\":\"IOS\"}"))
+   .andExpect(status().isOk());
+  assertThat(tokens.findByToken("test-device").orElseThrow().getPlatform()).isEqualTo(PushPlatform.IOS);
+  assertThat(tokens.findByUserId(student())).hasSize(2);
+  var refresh=tokenService.issue(users.findById(student()).orElseThrow()).refreshToken();
+  mvc.perform(post("/api/v1/auth/logout").header("Authorization",studentToken())
+   .contentType(MediaType.APPLICATION_JSON)
+   .content("{\"refreshToken\":\""+refresh+"\",\"pushToken\":\"test-device\"}"))
+   .andExpect(status().isOk());
+  assertThat(tokens.findByToken("test-device")).isEmpty();
+  assertThat(tokens.findByToken("second-device")).isPresent();
+  assertThat(tokens.findByToken("other-device")).isPresent();
+ }
+ @Test void B2_13_push_token_requires_authentication_and_valid_fields() throws Exception {
+  mvc.perform(put("/api/v1/users/me/push-token").contentType(MediaType.APPLICATION_JSON)
+   .content("{\"token\":\"test-device\",\"platform\":\"ANDROID\"}"))
+   .andExpect(status().isUnauthorized());
+  mvc.perform(put("/api/v1/users/me/push-token").header("Authorization",studentToken())
+   .contentType(MediaType.APPLICATION_JSON).content("{\"token\":\"\",\"platform\":\"ANDROID\"}"))
+   .andExpect(status().isBadRequest()).andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"));
  }
 }
