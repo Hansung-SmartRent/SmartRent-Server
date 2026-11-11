@@ -48,4 +48,20 @@ class RetainedWarningTest extends RentalSupport {
   assertThat(warningService.count(student())).isZero();
   assertThat(users.findById(student()).orElseThrow().isSuspended(time("09:00"))).isFalse();
  }
+ @Test void B2_17_03_purge_keeps_records_until_exact_deadline() {
+  var deadline=time("10:00").plusMonths(6);
+  retained.save(RetainedWarning.builder().studentNumber("2499001").kind(WarningKind.DAMAGE)
+   .createdAt(time("08:00")).retainUntil(deadline).build());
+  audit.record("WITHDRAW","탈퇴 학번 2499001",null,deadline);
+  at("2027-04-07T09:59:59+09:00");
+  service.purgeExpired(); em.flush(); em.clear();
+  assertThat(retained.findByStudentNumber("2499001")).hasSize(1);
+  assertThat(em.createQuery("select a.detail from AuditLog a where a.action='WITHDRAW'",String.class)
+   .getResultList()).contains("탈퇴 학번 2499001");
+  at("2027-04-07T10:00:00+09:00");
+  service.purgeExpired(); em.flush(); em.clear();
+  assertThat(retained.findByStudentNumber("2499001")).isEmpty();
+  assertThat(em.createQuery("select a.detail from AuditLog a where a.action='WITHDRAW'",String.class)
+   .getResultList()).containsOnly("탈퇴 회원");
+ }
 }
